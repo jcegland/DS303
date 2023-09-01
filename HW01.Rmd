@@ -1,0 +1,361 @@
+---
+title: "HW01"
+author: "Jillian"
+date: "2023-08-23"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Problem 1 Bias Variance Decomposition  
+## 1a  
+
+![sketched plot](IMG_0805.jpg){width=50%}
+
+
+## 1b  
+
+    i. Expected test MSE: the true test MSE of a model trained with infinite training sets  
+    ii. Training MSE: the error in the model compared to your training dataset.  
+      The average squared difference between the actual training set y and the model’s predicted y  
+    iii. Bias: the difference between the true model and our trained model, 
+       it measures the average deviation between our prediction and the true value  
+    iv. Variance: how much the model would change if the data used to train it changed  
+    v. Irreducible error: the inherent error in the data as the model will not be 
+       perfect due to natural variance  
+
+
+## 1c 
+    i.	Bias squared: decreases and flattens out as the model becomes more and 
+      more complex because the model is reducing the reducible error. 
+    ii.	Variance: variance increases with complexity because the model is overfitted, 
+      so changing the training dataset would lead to large changes in the predicted model. 
+    iii.	Expected test MSE: this is the sum of the variance, bias squared and 
+      the irreducible error so it follows the curve of both 
+    iv.	Training MSE: continually decreases with flexibility as the model follows 
+      the training data better and better 
+    v.	Irreducible error: constant value, very small, cannot be reduced 
+
+
+## 1d 
+More flexible models will have higher variance and lower bias, while less flexible models will have higher bias  
+and lower variance. A more flexible model is not always the best solution because that could lead to overfitting,  
+which means that the model is perfectly trained to the training data and will not be able to accurately predict  
+new data. However, using a less flexible model might not allow for enough variance in the data.  
+For example, if the data follows a linear pattern, using a more flexible model will overfit the data, and will not  
+be a good future predictor. If the model follows a more curved pattern, using the simplest of models,  
+the constant model, will not allow for any flexibility and will not be a good predictor.  
+
+
+
+## 1e 
+If the true model is linear, a cubic regression would lead to a higher training MSE than a linear regression would.  
+The more flexible model would overfit the data since only a linear model is needed.   
+
+
+## 1f 
+The test MSE for a cubic model would be lower than the test MSE for a linear model. Since the cubic model would be  
+overfit for the true linear data, it wouldn't be a good model to predict new data, resulting in a low test MSE.  
+Since the true model is linear, the linear regression would have a higher test MSE.  
+
+
+
+# Problem 2 Interpreting MLR  
+## 2a  
+ii. for a fixed value of IQ and GPA, college graduates earn more, on average than high school students is correct.  
+The coefficient represents the average change in Y associated with 1 unit change in X,  
+holding all other predictors constant. Since X3 is categorical, an input of 1 associated with the college level  
+will increase the predicted salary by 35 from a high school level salary with the same GPA and IQ.  
+Since gpa is linear, having a higher gpa will not change the difference in salaries  
+between high school and college level.  
+
+
+
+## 2b  
+A college graduate with an IQ of 110 and a GPA of 4.0 will have a predicted salary of $172,700.  
+
+```{r, results = 'hide'} 
+salary_model <- function(gpa, iq, level){
+  return(50 + (20*gpa) + (.07*iq) + (35*level)) 
+}
+
+(salary_model(4.0, 110, 1))
+
+```
+
+
+## 2c  
+False, even though the coefficient of IQ is small, it will still have a significant impact in the model.  
+For example, with a fixed GPA of 4.0 and level of High School and  
+an IQ of 80 will have a predicted salary of $135,600, and  
+an IQ of 90 will have a predicted salary of $136,300, which is a difference of $700. 
+
+```{r, results = 'hide'} 
+# 4.0 gpa, 80 iq, high school level 
+(salary_model(4.0, 80, 0))
+
+# 4.0 gpa, 90 iq, high school level 
+(salary_model(4.0, 90, 0))
+
+```
+
+
+# Problem 3 Multiple Linear Regression  
+
+```{r, results = 'hide'} 
+library(ISLR2)
+head(Boston)
+
+```
+# 3a 
+506 rows and 13 variables in Boston dataset.  
+lstat is percent of the population that is lower status.  
+
+```{r} 
+?Boston
+
+```
+
+
+# 3b 
+the average per capita crime rate across all suburbs is 3.613524 
+
+
+```{r, results = 'hide'} 
+mean(Boston$crim)
+
+```
+
+# 3c 
+The average per capita crime rate for the suburbs not near the Charles river is 3.744447  
+The average per capita crime rate for the suburbs near the Charles river is 1.85167  
+
+So it is safer to be near the river.  
+
+
+```{r, results = 'hide'} 
+away_river = Boston[Boston$chas==0, ]
+mean(away_river$crim)
+
+near_river = Boston[Boston$chas==1, ]
+mean(near_river$crim)
+
+```
+
+
+## 3d 
+Yes, there are suburbs with particularly high crime rates. I defined particularly high as outside 95% of the data, or outside 2 standard deviations of the mean. There are 16 suburbs that fit the definition. 
+
+```{r, message=FALSE, include=FALSE} 
+library(kableExtra)
+
+#sum_Bost = summary(Boston$crim) 
+sum_Bost = summary(Boston)
+
+kable(x=sum_Bost, format = "html") %>% kable_styling() %>% kableExtra::remove_column(c(3,4,5,6,7,8,9,10,11,12,13,14))
+
+
+```
+
+
+```{r, results = 'hide'} 
+hist(Boston$crim)
+boxplot(Boston$crim, horizontal = TRUE)
+
+mean = mean(Boston$crim)
+stddev = sd(Boston$crim)
+stddev
+
+ci_upper = mean + (2*stddev)
+ci_lower = mean - (2*stddev)
+ci_upper
+ci_lower
+
+# number with particularly high crime rates 
+high_rates = Boston[Boston$crim<ci_lower | Boston$crim>ci_upper, ]
+nrow(high_rates)
+
+
+```
+
+
+
+
+
+
+## 3e  
+These scatterplots show the relationship between the explanatory variables and the crime rate.  
+The correlation matrix shows the r squared values between each of the variables to check for correlation.  
+Since we are only interested in correlation to the crime rate, we can look at the first row (or column).  
+The most correlated are rad (.63), tax (.58), and lstat (.46).  
+However, looking at the scatterplots, rad and tax don't seem to have a good correlation.  
+From the scatterplots, I see the most correlation in lstat, rm, and possibly nox and medv.  
+
+
+```{r, message=FALSE, include=FALSE} 
+library(ggplot2)
+library(reshape2)
+```
+
+```{r}
+#pairs(Boston, main = "Scatter Plot Matrix for Boston Crime")
+
+Boston2 <- melt(Boston, id.vars = "crim")
+ggplot(Boston2, aes(x=crim, y=value)) + geom_point() + facet_wrap("variable", scales="free") 
+
+round(cor(Boston),2)
+
+```
+
+
+## 3f  
+predicted y = -3.33 + 0.55(lstat)  
+
+Residual standard error: 7.664  
+Adjusted R-squared:  0.206  
+p-value: < 2.2e-16
+
+
+```{r} 
+model1=lm(crim~lstat,data=Boston)
+#summary(model1)
+
+plot(crim~lstat,data=Boston)
+points(Boston$lstat,model1$fitted.values,col='red')
+
+```
+
+```{r, results = 'hide', echo=FALSE, warning=FALSE, error=FALSE, message=FALSE, include=FALSE}
+library(tidyr)
+library(tidyverse)
+library(broom)
+```
+
+```{r}
+lm(crim~lstat,data=Boston) %>% tidy() %>% kable() %>% kable_styling() %>% kableExtra::remove_column(c(3,4))
+
+
+```
+
+
+## 3g  
+In order to fit a model, we want create a model that minimizes the squared residuals. This model will have the minimum amount of error and be the closest to the data. To find this, take the derivative of the sum of the squared differences between true y and predicted y, set the derivative equal to 0, and solve to find the optimization. This approach is reasonable because it finds the optimized values for the model instead of guessing.  
+
+
+## 3h  
+Show below are the results for the linear models for each predictor. Most of the models show statistical significance except for chas. This is confirmed by the pairwise plots and the correlation matrix in part 3e above that show some relation between the predictors and the response.  
+
+
+```{r} 
+cols = c('zn', 'indus', 'chas', 'nox', 'rm', 'age', 'dis', 'rad', 'tax', 'ptratio', 'lstat', 'medv')
+models = list() 
+
+Beta0 = c() 
+Beta1 = c() 
+p_vals = c() 
+
+
+#plot(crim~lstat,data=Boston)
+#points(Boston$lstat,model1$fitted.values,col='red')
+
+for (i in 1:12){
+  col = cols[i]
+  model = lm(paste("crim ~", col),data=Boston)
+  mod_sum = summary(model)
+  models[[col]] = mod_sum
+  Beta0 = append(Beta0, round(mod_sum$coefficients[1,1], 2), i)
+  Beta1 = append(Beta1, round(mod_sum$coefficients[2,1], 2), i)
+  p_vals = append(p_vals, mod_sum$coefficients[2,4], i)
+  
+}
+
+results = data.frame(cols, Beta0, Beta1, p_vals)
+
+results %>% kable() %>% kable_styling()
+
+
+#lm(crim~lstat,data=Boston) %>% tidy() %>% kable() %>% kable_styling() %>% kableExtra::remove_column(c(3,4))
+
+```
+
+## 3i 
+
+```{r} 
+model_all = lm(crim~., data=Boston)
+
+#results2 = data.frame(cols, Beta0, Beta1, p_val)
+
+summary(model_all)$coefficients %>% kable() %>% kable_styling() %>% kableExtra::remove_column(c(3,4))
+
+```
+
+## 3j  
+The p-values for the multiple regression model were much higher, meaning the model was not as statistically significant. The scatter plot below shows the multiple regression points in red and the simple regression points in blue. For every single variable, the p-value was higher in the multiple regression model. However you can see more variance between the variables, allowing us to see which has more statistical significance in the model. This will let us adjust our model to make it more accurate.  
+
+
+
+```{r}
+simple_ps = p_vals 
+multiple_ps = summary(model_all)$coefficients[2:13,4]
+
+plot(x=multiple_ps, col="red")
+points(x=simple_ps, col="blue")
+
+```
+
+
+## 3k 
+train MSE: 42.49345  
+test MSE: 41.19923  
+
+
+```{r, results='hide'}
+set.seed(1) 
+
+n = dim(Boston)[1]
+train_index = sample(1:n,n/2,replace=F)
+train_boston = Boston[train_index,]
+test_boston = Boston[-train_index,]
+
+model_all2 = lm(crim~., data=train_boston)
+
+#training and test MSE 
+m1tr = mean((train_boston$crim - model_all2$fitted.values)^2)
+m1ts = mean((test_boston$crim - predict(model_all2,newdata=test_boston))^2)
+
+m1tr 
+m1ts
+
+```
+
+
+
+## 3l  
+train MSE: 43.97466  
+test MSE: 39.62763  
+The training MSE increased from the model with all the variables, and the test MSE decreased.  
+
+```{r, results='hide'}
+model_partial = lm(crim~zn + indus + nox + dis + rad + ptratio + medv, data=train_boston)
+
+
+#training and test MSE 
+m1tr = mean((train_boston$crim - model_partial$fitted.values)^2)
+m1ts = mean((test_boston$crim - predict(model_partial,newdata=test_boston))^2)
+
+m1tr 
+m1ts
+
+
+```
+
+
+## 3m  
+These results did not surpise me. I thought that with a simpler model only including more statistically significant variables would make the model better. The training MSE went up, which is okay since we really want the model to be better at predicting new variables (test MSE), which it does. 
+
+
+
+
+
