@@ -1,0 +1,309 @@
+---
+title: "HW04"
+author: "Jillian"
+date: "2023-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Problem 1: Best subset selection
+```{r, results = 'hide', message = FALSE }
+prostate = read.table("/Users/jillianeglandschool/Desktop/DS303/prostate.data",header=TRUE) 
+library(kableExtra)
+library(leaps)
+library(caret)
+```
+
+## 1a 
+Best model by BIC: M3  
+Best model by AIC: M5  
+Best model by Mallow's Cp: M5  
+Best model by adj R^2: M7  
+final best model: M5   
+I would choose Model 5 as 2 different methods recommended it. It is also slightly simpler which would be more cost effective than gathering more medical data.  
+
+```{r, results = 'hide'}
+regfit = regsubsets(lpsa~.-train,data=prostate,nbest=1,nvmax=8)
+regfit.sum = summary(regfit)
+regfit.sum
+#names(regfit.sum)
+
+n = dim(prostate)[1]
+p = rowSums(regfit.sum$which)
+adjr2 = regfit.sum$adjr2
+cp = regfit.sum$cp
+rss = regfit.sum$rss
+# use our own formulas for AIC and BIC 
+AIC = n*log(rss/n) + 2*(p)
+BIC = n*log(rss/n) + (p)*log(n)
+
+cbind(p,rss,adjr2,cp,AIC,BIC)
+#plot(p,BIC)
+#plot(p,AIC)
+
+which.min(BIC)
+which.min(AIC)
+which.min(cp)
+which.max(adjr2)
+
+```
+```{r}
+kable(coef(regfit,3), format = "html", caption='M3') %>% kable_styling()
+kable(coef(regfit,5), format = "html", caption='M5') %>% kable_styling()
+kable(coef(regfit,6), format = "html", caption='M6') %>% kable_styling()
+
+
+```
+
+
+## 1b 
+This method picks model 3 as the best model for having the best test MSE.  
+Model 3: Y = -1.0227780 + 0.5199861(lcavol) + 0.7367954(lweight) + 0.5379032(svi)  
+
+```{r, results = 'hide'}
+train_data = subset(prostate,train==TRUE)[,1:9]
+test_data = subset(prostate,train==FALSE)[,1:9]
+
+
+best.train = regsubsets(lpsa~.,data=prostate,nbest=1,nvmax=8)
+
+## the predict() function does not work on regsubsets objects, 
+# so we need to write our own code to obtain our predicted values:
+
+val.errors = rep(NA,8)
+for(i in 1:8){
+  test.mat = model.matrix(lpsa~.,data=test_data)
+  
+  coef.m = coef(best.train,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors[i] = mean((test_data$lpsa-pred)^2)
+}
+
+which.min(val.errors)
+
+coef(best.train,id=3)
+
+```
+```{r}
+kable(coef(regfit,3), format = "html", caption='M3') %>% kable_styling()
+
+
+```
+
+
+## 1c 
+k folds subset approach chose a size 3 model as the best model.  
+
+```{r, results='hide'}
+k = 10 
+flds <- createFolds(prostate$lpsa, k = 10, list = TRUE, returnTrain = FALSE)
+
+val.errors = matrix(NA, k, 8)
+# loop over k folds (for j in 1:k)
+for (j in 1:k){
+  test_index = flds[[i]]
+  
+  test = prostate[test_index,-10]
+  train = prostate[-test_index,-10]
+  
+  best.fit = regsubsets(lpsa~.,data=train,nbest=1,nvmax=8) 
+  
+  for (i in 1:8){
+    test.mat = model.matrix(lpsa~.,data=test)
+    
+    coef.m = coef(best.fit,id=i)
+    
+    pred = test.mat[,names(coef.m)]%*%coef.m
+    val.errors[j,i] = mean((test$lpsa-pred)^2)
+    
+  }
+}
+
+cv.errors = apply(val.errors,2,mean)
+which.min(cv.errors)
+
+best_mod = regsubsets(lpsa~.,data=prostate,nbest=1,nvmax=8) 
+
+```
+
+```{r} 
+kable(cv.errors, format = "html", caption='cv errors') %>% kable_styling()
+kable(coef(best_mod,id=3), format = "html", caption='M3') %>% kable_styling()
+
+
+```
+
+
+# Problem 2: Simulation Studies 
+
+## 2a 
+
+
+
+
+
+```{r}
+p=20 
+n=100 
+error = rnorm(100,0,1)
+#Y = X*Beta + error 
+
+```
+
+
+
+```{r}
+
+
+```
+
+# Problem 3: Cross-validation 
+
+# 3a 
+K folds separate the dataset into k sections. It will loop k times, and each time, one of the k sections is used as the test set, with the other k-1 sections as the training set. A model is then fit using the training set, and a Test MSE is calculated using a prediction from the training set and the values in the test set.  
+
+# 3b 
+LOOCV takes into account the problem of Test MSE validation, which is that it is not able to leverage the whole dataset since it is random. However, the problem with LOOCV is that is is computationally expensive as you have to loop through all the data n times and refit each time. K folds validation also accounts for the problems of Test MSE validation, but also accounts for the problem of LOOCV. With the data split k ways, you only have to loop and refit the data k times instead of n times. One problem with K fold validation is still that you can't use it for very small datasets. It helps with leveraging more of the dataset, but still might leave some out if there is a smaller representation of a certain population. Another problem of K fold as compared to LOOCV is that k fold still has some randomness as to which values get put into which fold. LOOCV gives the same results every time.   
+
+# 3c 
+
+```{r}
+set.seed(1)
+x = rnorm(100)
+error = rnorm(100,0,1^2)
+y = x - 2*x^2 + error 
+
+```
+
+# 3d 
+The linearity assumption does not hold. The residual plot clearly shows a curve on the red line, indicating that the model is not linear. 
+```{r}
+fit = lm(y~x)
+sum.fit = summary(fit)
+
+par(mfrow=c(2,2))
+plot(fit)
+
+``` 
+
+# 3e 
+LOOCV errors: 
+```{r}
+df = data.frame(x, y)
+set.seed(12) 
+
+n = dim(df)[1]
+MSE_M1 = MSE_M2 = MSE_M3 = MSE_M4 = rep(0,n)
+for(i in 1:n){
+  test = df[i,]
+  train = df[-i,]
+  
+  M1 = lm(y~x,data=train)
+  M2 = lm(y~poly(x,2),data=train)
+  M3 = lm(y~poly(x,3),data=train)
+  M4 = lm(y~poly(x,4),data=train)
+  
+  M1_y = predict(M1,newdata=test)
+  M2_y = predict(M2,newdata=test)
+  M3_y = predict(M3,newdata=test)
+  M4_y = predict(M4,newdata=test)
+  
+  MSE_M1[i] = (test$y - M1_y)^2
+  MSE_M2[i] = (test$y - M2_y)^2
+  MSE_M3[i] = (test$y - M3_y)^2
+  MSE_M4[i] = (test$y - M4_y)^2
+}
+
+mean(MSE_M1)
+mean(MSE_M2)
+mean(MSE_M3)
+mean(MSE_M4)
+
+
+``` 
+
+# 3f 
+The results were exactly the same. This is because LOOCV is consistent. Each observation gets a chance to be the test set one time, so the value, which is the average of all the error of each test set, will come out the same every time.  
+```{r, results = 'hide'}
+df = data.frame(x, y)
+set.seed(21) 
+
+n = dim(df)[1]
+MSE_M1 = MSE_M2 = MSE_M3 = MSE_M4 = rep(0,n)
+for(i in 1:n){
+  test = df[i,]
+  train = df[-i,]
+  
+  M1 = lm(y~x,data=train)
+  M2 = lm(y~poly(x,2),data=train)
+  M3 = lm(y~poly(x,3),data=train)
+  M4 = lm(y~poly(x,4),data=train)
+  
+  M1_y = predict(M1,newdata=test)
+  M2_y = predict(M2,newdata=test)
+  M3_y = predict(M3,newdata=test)
+  M4_y = predict(M4,newdata=test)
+  
+  MSE_M1[i] = (test$y - M1_y)^2
+  MSE_M2[i] = (test$y - M2_y)^2
+  MSE_M3[i] = (test$y - M3_y)^2
+  MSE_M4[i] = (test$y - M4_y)^2
+}
+
+mean(MSE_M1)
+mean(MSE_M2)
+mean(MSE_M3)
+mean(MSE_M4)
+
+
+```
+
+# 3g 
+The smallest LOOCV error was from the quadratic model. This is what I expected; since the true model was quadratic, the best model should also be quadratic.  
+
+
+# 3h 
+For the models that had coefficients past the second exponential, those coefficients were not statistically significant. This agrees with the results from the cross validation that indicated that the quadratic model was the best model. Any coefficients past x^2 would not be statistically significant.  
+
+```{r, results = 'hide'}
+M1 = lm(y~x,data=df)
+M2 = lm(y~poly(x,2),data=df)
+M3 = lm(y~poly(x,3),data=df)
+M4 = lm(y~poly(x,4),data=df)
+
+summary(M1) 
+summary(M2) 
+summary(M3) 
+summary(M4) 
+
+
+```
+
+
+
+# Problem 4: Concept Review 
+
+# 4a 
+False, they will lead us to pick the same model. Since they each have the same number of predictors, the penalty will be constant for each.  
+
+# 4b 
+False, RSS4 only decreases from RSS3 when they are nested, meaning that RSS4 has the same predictors as RSS3 but with an additional predictor. Since M4 doesn't include X1 and X2, they are not nested, and the statement does not hold.  
+
+# 4c 
+True, since M2 is nested in M4, this is true. We have a RSS for M2, adding a predictor will either decrease the RSS or stay the same. This is true for adding a second extra predictor. So the statement holds.  
+
+# 4(a) 
+No, that is false. Mk will not necessarily be nested in Mk+1. In this exhaustive search, every combination is searched so it doesn't just find the next best variable to add. It checks the RSS of every combination of that size. So if the interaction between the variables when Mk+1 doesn't include X1 even though Mk does results in a smaller RSS, that will be chosen as the best model for the size.  
+
+# 4(b) 
+Test MSE means we have to split our data into training and test subsets. However, this means that not all of our data is leveraged in the model. We will have different data every time since it is a random split, so it's inconsistent. AIC/BIC will be more consistent and will leverage all the data. Both of these will also either choose the true model every time or find the one that mimics the true model the closest. AIC/BIC should be used when there is a small sample size, and you cannot afford to split your data into different sets.  
+
+# 4(c) 
+Disagree, looking at individual p values is not always the most reliable. It may be that the interaction of those specific variables is an accurate representation of the true model. The more accurate assessment of the model would be looking at it's overall values, such as it's overall p value, test MSE, adj R^2, or AIC/BIC values.  
+
+
+

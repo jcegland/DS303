@@ -1,0 +1,282 @@
+---
+title: "HW02"
+author: "Jillian"
+date: "2023-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Problem 1: Properties of least square estimators via simulations 
+
+## 1a  
+beta0 = 2  
+beta1 = 3  
+beta2 = 5  
+
+
+
+## 1b  
+
+```{r} 
+beta_0 = 2  
+beta_1 = 3  
+beta_2 = 5 
+
+X1 = seq(0,10,length.out =100) #generates 100 equally spaced values from 0 to 10.
+X2 = runif(100) #generates 100 uniform values.
+
+error = rnorm(100,0,1)
+Y = beta_0 + beta_1*X1 + beta_2*log(X2) + error  
+
+print(Y)
+
+
+``` 
+
+
+## 1c  
+The X1 values are more closely correlated to Y than the X2 values are. The X1 values are closer together, while the X2 values are more spread apart.  
+
+```{r} 
+plot(X1, Y)
+plot(X2, Y)
+
+``` 
+
+
+## 1d 
+
+```{r, echo=TRUE} 
+B=5000 
+beta_0 = 2  
+beta_1 = 3  
+beta_2 = 5 
+X1 = seq(0,10,length.out =100) 
+X2 = runif(100) 
+beta1hat = rep(NA, B) 
+
+for (i in 1:B){
+  error = rnorm(100,0,1^2)
+  Y = beta_0 + beta_1*X1 + beta_2*log(X2) + error  
+  fit = lm(Y~X1+log(X2)) 
+  beta1hat[i] = fit$coefficients[[2]]
+  
+  
+}
+mean(beta1hat)
+
+
+``` 
+
+
+## 1e  
+
+```{r} 
+hist(beta1hat)
+abline(v=3, col='red')
+
+``` 
+
+## 1f  
+
+```{r, echo=TRUE} 
+B=5000 
+beta_0 = 2  
+beta_1 = 3  
+beta_2 = 5 
+X1 = seq(0,10,length.out =100) 
+X2 = runif(100) 
+beta2hat = rep(NA, B) 
+
+for (i in 1:B){
+  error = rnorm(100,0,1^2)
+  Y = beta_0 + beta_1*X1 + beta_2*log(X2) + error  
+  fit = lm(Y~X1+log(X2)) 
+  beta2hat[i] = fit$coefficients[[3]]
+  
+  
+}
+mean(beta2hat)
+
+``` 
+
+
+## 1g  
+
+```{r} 
+hist(beta2hat)
+abline(v=5, col='red')
+
+``` 
+
+
+## 1h  
+![](unbiased_error.jpg){width=50%}
+
+## 1i  
+σ^2 = 1/(n-1) * E[Σi=1,n((xi-x_bar)^2)] 
+σ^2 = 8.587559 
+
+```{r} 
+X1 = seq(0,10,length.out =100) 
+
+sigma_square = sum((X1-mean(X1))^2)/99
+
+``` 
+
+
+# Problem 2: Review of regression concepts  
+
+## 2a  
+False, the true regerssion model is Yi = B0 + B1Xi1 + B2Xi2 + ... + BmXim + ei (i = 1,...,n)  
+
+
+## 2b  
+False, in general, we would expect the training MSE to be smaller because that is what we are optimizing the model to fit. And we expect the test MSE will be bigger because it is trying to predict new values that the model did not train off of. However, it is not guaranteed. 
+
+
+## 2c  
+False, E(y0 - f-hat(x0))^2 is the expected test MSE, but y0 is the actual y values from our test set, not the training set. f-hat(x0) is evaluated by predicting values using the x0 from the test set.  
+
+
+## 2d  
+True, by reducing the complexity, we are less likely to overfit the model, which will then improve our test MSE. The bias-variance decomposition tells us to find a balance between enough flexibility and not too much to find the lowest test MSE.  
+
+
+## 2e 
+False, the irreducible error is the minimum bound for the test MSE. Since we can only train the model based on the training data, we won't be able to fit the model more accurately than the variance of the residuals.  
+
+
+## 2f  
+True, the training MSE can be smaller than the irreducible error. By making more and more flexible models, we can overfit the data so that the model matches the training data perfectly, essentially driving the training MSE to 0.  
+
+
+## 2g  
+This would be a problem. Since the happiness score is calculated using 2 of the other predictors, it contains redundant data. This will not improve the fit of the dataset. To create a model, we want data that is full rank. This means that the data is linearly independent and does not contain any redundant data.  
+
+
+## 2h 
+There is not enough information. If adding a predictor improves the model and lowers the training MSE, the RSS will decrease, but if the training MSE increases, the RSS will increase. The RSS is the sum of the squared distance between the actual training data point and the model. So if the error is smaller, the distance of the residuals will be smaller.  
+
+
+# Problem 3: Expected test MSE  
+
+# 3a  
+100 values of Y  
+```{r} 
+set.seed(1)
+beta_0 = beta_1 = beta_2 = 1 
+error = rnorm(100,0,1)
+X1 = seq(0,5,length.out =100) 
+Y = beta_0 + beta_1*X1 + beta_2*X1^2 + error
+
+Y
+
+plot(X1, Y) 
+
+``` 
+
+
+# 3b  
+
+```{r} 
+B=1000 
+beta_0 = beta_1 = beta_2 = 1 
+X1 = seq(0,5,length.out =100) 
+
+M1_predict = M2_predict = M3_predict = M4_predict = M5_predict = rep(NA, B) 
+model = c(1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5)
+value_at1 = rep(NA, 25)
+results = data.frame(model, value_at1)
+
+for (i in 1:B){
+  error = rnorm(100,0,1)
+  Y = beta_0 + beta_1*X1 + beta_2*X1^2 + error 
+  M1 = lm(Y~poly(X1+X2^2, 1, raw=TRUE))
+  M2 = lm(Y~poly(X1+X2^2, 2, raw=TRUE))
+  M3 = lm(Y~poly(X1+X2^2, 3, raw=TRUE))
+  M4 = lm(Y~poly(X1+X2^2, 4, raw=TRUE))
+  M5 = lm(Y~poly(X1+X2^2, 5, raw=TRUE))
+  
+  M1_predict[i] = predict(M1)[1]
+  M2_predict[i] = predict(M2)[1]
+  M3_predict[i] = predict(M3)[1]
+  M4_predict[i] = predict(M4)[1]
+  M5_predict[i] = predict(M5)[1]
+  if (i<=5){
+    results[i, 2]=predict(M1)[1] 
+    results[i+5, 2]=predict(M2)[1] 
+    results[i+10, 2]=predict(M3)[1] 
+    results[i+15, 2]=predict(M4)[1] 
+    results[i+20, 2]=predict(M5)[1] 
+  }
+  
+  
+}
+
+library(kableExtra)
+
+kable(results, format = "html") %>% kable_styling()
+``` 
+
+
+# 3c  
+First 5 values of test set when x0=1  
+
+```{r} 
+beta_0 = beta_1 = beta_2 = 1 
+X1 = rep(1,1000)
+error = rnorm(100,0,1)
+x0 = rep(1,1000)
+test_y = rep(NA,1000)
+
+Y = beta_0 + beta_1*X1 + beta_2*X1^2 + error 
+
+test_y = Y
+test_set = data.frame(x0, test_y)
+
+kable(head(test_set), format = "html") %>% kable_styling()
+
+
+``` 
+
+
+# 3d  
+Model 4 has the smallest expected test MSE.  
+
+```{r} 
+
+m1ts = mean( ((test_set[2] - predict(M1,newdata=test_set))^2)[1,] )
+m2ts = mean( ((test_set[2] - predict(M2,newdata=test_set))^2)[1,] )
+m3ts = mean( ((test_set[2] - predict(M3,newdata=test_set))^2)[1,] )
+m4ts = mean( ((test_set[2] - predict(M4,newdata=test_set))^2)[1,] )
+m5ts = mean( ((test_set[2] - predict(M5,newdata=test_set))^2)[1,] )
+
+print(paste("M1 test MSE: ", m1ts ))
+print(paste("M2 test MSE: ", m2ts ))
+print(paste("M3 test MSE: ", m3ts ))
+print(paste("M4 test MSE: ", m4ts ))
+print(paste("M5 test MSE: ", m5ts ))
+
+``` 
+
+
+# 3e  
+
+```{r} 
+mse = c(m1ts, m2ts, m3ts, m4ts, m5ts)
+complexity = c(1,2,3,4,5)
+plot(complexity, mse)
+
+
+``` 
+
+
+# 3f. 
+The simplest model had the highest MSE by far, but when the model got more complex, the MSE decreased. This is because the bias decreased with the increasing flexibility. However some of the higher complexity models had higher MSE. This is due to the increasing variance. The bias decreases but the variance increases, so we have to find a model with a good balance of both to find the lowest MSE. 
+
+
+

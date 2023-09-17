@@ -1,0 +1,208 @@
+---
+title: "HW03"
+author: "Jillian"
+date: "2023-09-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Problem 1: Statistical Inference 
+
+## 1a  
+
+```{r, results = 'hide'} 
+library(ISLR2)
+library(kableExtra)
+head(Carseats)
+```
+
+```{r}
+fit = lm(Sales~.-ShelveLoc, data=Carseats) 
+results = summary(fit)$coefficients[,1:2]
+
+kable(results, format = "html") %>% kable_styling() 
+
+```
+
+```{r, results='hide'}
+summary(fit)$coefficients[7, ]
+``` 
+hypothesis test for Age:  
+H0: B6 = 0  
+Ha: B6 ≠ 0  
+test statistic: -7.437  
+null distribution: assuming the errors are normal, we can assume that the t's are also normal when H0 is true. This is the distribution of the test statistic for age, assuming that the coefficient for age is 0.  
+p-value: 6.59e-13  
+Conclusion: we find evidence of a relationship between Sales and Age at confidence level .05  
+
+
+
+## 1b 
+sigma squared is 3.733. This is the MSE, which is the sum of the squared difference between the training model and the actual data. This quantifies the error in your model.  
+
+```{r, results = 'hide'} 
+summary(fit)$sigma^2
+
+```
+
+
+## 1c  
+0.1369399 is the average change in sales associated with 1 unit change in advertising, holding all other predictors constant.  
+
+
+## 1d  
+RSS full: 1.932 
+RSS reduced: 2.824  
+
+
+```{r, results='hide'} 
+fit_reduced = lm(Sales~1, Carseats)
+
+summary(fit_reduced)
+```
+
+
+## 1e  
+H0: B1 = B2 = ... = B9 = 0  
+Ha: at least one Bj ≠ 0  
+test statistic: 51.38  
+null distribution: the distribution of the f test statistics assuming the errors are normal, we assume H0 is true.  
+p-value: < 2.2e-16  
+conclusion: we find evidence of a relationship between sales and at least one predictor at confidence level .05  
+
+
+## 1f 
+f(X) estimate: 15.80707  
+uncertainty: between 14.91953 and 16.69461 with 95% confidence  
+
+
+```{r, results = 'hide'} 
+
+Xh = data.frame(CompPrice = mean(Carseats$CompPrice), Income = median(Carseats$Income), Advertising = 15, Population = 500, Price = 50, Age = 30, Education = 10, Urban = 'Yes', US = 'Yes', ShelveLoc='Bad')
+predict(fit,newdata=Xh,interval='confidence',level=0.95)
+
+```
+
+
+## 1g 
+Y prediction: 15.80707  
+uncertainty: between 11.90593 and 19.70821 with 95% confidence  
+
+```{r, results = 'hide'} 
+predict(fit,newdata=Xh,interval='prediction',level=0.95)
+
+
+```
+
+## 1h  
+Y prediction: -21.16873  
+This does not make sense as sales would not be negative. The model will have some limitations as when we try to predict for values outside the ones in the training set, it will be extrapolation.  
+
+```{r, results = 'hide'} 
+Xh = data.frame(CompPrice = mean(Carseats$CompPrice), Income = median(Carseats$Income), Advertising = 15, Population = 500, Price = 450, Age = 30, Education = 10, Urban = 'Yes', US = 'Yes', ShelveLoc='Bad')
+predict(fit,newdata=Xh,interval='prediction',level=0.95)
+
+```
+
+
+# Problem 2: The Challenge of Multiple Testing 
+
+## 2a  
+we can expect to make m*α type 1 errors.  
+
+## 2b  
+P(V ≥ 1) = 1 - P(no significance) = 1 - (1-α)^m  
+
+## 2c  
+Multiple testing could be a problem in healthcare. That is a very serious setting in which being correct is important. If we test a model that says that these predictors are statistically significant when they are not actually significant, our results will not be accurate, which is dangerous when it comes to a person's health.  
+
+## 2d  
+The approach makes statistical sense. The more estimates we have, the more likely we are to make a type one error so dividing by the number of estimates accounts for that number. So with 100 tests at α=.05, the chance of at least one false positive is now 1 - (1-.0005)^100 = .04878 instead of .994  
+
+## 2e  
+6 significant values as opposed to 16 beforehand. 
+
+```{r, results='hide'} 
+set.seed(10)
+x = matrix(NA,1000,200)
+
+for(i in 1:200){
+  x[,i] = rnorm(1000)
+}
+
+beta0 = 1 
+beta1 = 2 
+beta2 = 3 
+beta3 = 4 
+beta4 = 5 
+beta5 = 6
+
+y = beta0 + beta1*x[,1] + beta2*x[,2] + beta3*x[,3] + beta4*x[,4] + beta5*x[,5] + rnorm(1000, 0, 1)
+
+#x[,196] = y*2
+#x[,197] = y*3
+#x[,198] = y + 1500
+#x[,199] = y/5
+#x[,200] = y^2 
+
+data = as.data.frame(cbind(y,x)) 
+
+fit = lm(y~.,data=data)
+#summary(fit)
+
+p_values = summary(fit)$coefficients[,4]  
+length(which(p_values<0.05))
+length(which(p_values<0.05/5))
+
+
+
+```
+
+## 2f 
+One drawback is the fact that with a significantly smaller α, it is harder to detect smaller differences. It will find a big predictor, but not if there are lots of little ones.  
+
+
+# Problem 3: Diagnostics for MLR 
+
+## 3a 
+1. relationship between x and Y is approximately linear  
+2. E(e) = 0, expected random noise is 0  
+3. Var(e) = σ^2, constant variance assumption  
+4. Errors are uncorrelated, don't affect each other  
+
+## 3b 
+False, we do not need to make any assumptions about the error distribution for linear models. We do have to assume that the errors have a mean of 0 and have constant variance. We only have to assume normal error distribution when making inferences such a t tests or confidence intervals.  
+
+## 3c 
+True, these tests assume that the random errors are normally distributed. We have to assume this in able to make inferences about the t distribution.  
+
+## 3d 
+Comparing every variable to the response variable may show some sort of correlation, but will not show enough variance between the predictors. The single predictors might show low p values for each one, but you won't be able to see enough variation to say that one predictor is better than another. It also will not be able to pick up the interaction that the variable may have with each other when in the same model. 
+
+## 3e 
+
+```{r} 
+
+m1 = lm(mpg~horsepower,data=Auto)
+#summary(m1)
+par(mfrow=c(2,2))
+plot(m1)
+
+
+```
+
+I propose using a model with a higher complexity (I used 2) to try to account for the nonlinearity. The red line in the residual plot is more flat than the original plot but not completely flat, so it is a slight improvement.  
+
+```{r} 
+m2 = lm(mpg~poly(horsepower,2,raw=TRUE),data=Auto)
+par(mfrow=c(2,2))
+plot(m2)
+
+```
+
+
+
