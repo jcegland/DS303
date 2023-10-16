@@ -131,7 +131,7 @@ sigma_square = sum((X1-mean(X1))^2)/99
 # Problem 2: Review of regression concepts  
 
 ## 2a  
-False, the true regerssion model is Yi = B0 + B1Xi1 + B2Xi2 + ... + BmXim + ei (i = 1,...,n)  
+False, the true regression model is Yi = B0 + B1Xi1 + B2Xi2 + ... + BmXim + ei (i = 1,...,n)  
 
 
 ## 2b  

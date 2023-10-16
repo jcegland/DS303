@@ -30,13 +30,13 @@ kable(results, format = "html") %>% kable_styling()
 
 ```{r, results='hide'}
 summary(fit)$coefficients[7, ]
+# df is n-p+1 
 ``` 
 hypothesis test for Age:  
 H0: B6 = 0  
 Ha: B6 ≠ 0  
 test statistic: -7.437  
-null distribution: assuming the errors are normal, we can assume that the t's are also normal when H0 is true. This is the distribution of the test statistic for age, assuming that the coefficient for age is 0.  
-p-value: 6.59e-13  
+null distribution: t distribution with 390 degrees of freedom
 Conclusion: we find evidence of a relationship between Sales and Age at confidence level .05  
 
 
@@ -70,7 +70,7 @@ summary(fit_reduced)
 H0: B1 = B2 = ... = B9 = 0  
 Ha: at least one Bj ≠ 0  
 test statistic: 51.38  
-null distribution: the distribution of the f test statistics assuming the errors are normal, we assume H0 is true.  
+null distribution: F distribution 9,390 
 p-value: < 2.2e-16  
 conclusion: we find evidence of a relationship between sales and at least one predictor at confidence level .05  
 

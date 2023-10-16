@@ -1,0 +1,364 @@
+---
+title: "HW05"
+author: "Jillian Egland"
+date: "2023-09-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+```{r}
+library(ISLR2)
+library(leaps)
+library(ggplot2)
+library(kableExtra)
+```
+
+```{r, results = 'hide'}
+# check assumption 
+
+# check for linearity 
+m1 = lm(medv~.,data=Boston)
+par(mfrow=c(2,2))
+#plot(m1)
+
+m2 = lm(medv~. -lstat + poly(lstat, 2),data=Boston)
+#plot(m2)
+
+
+```
+
+```{r, results = 'hide'}
+#library(ggplot2)
+#pairs(Boston[, c(1, 3:6)])
+#plot(Boston$medv, ~ crim + zn, data=Boston)
+
+#par(mfrow=c(4,3))
+for (col in names(Boston[,1:12])) {
+  #plot(Boston[,col], Boston$medv,xlab=col,ylab="medv")
+}
+
+```
+
+
+```{r, warning=FALSE, message=FALSE, results = 'hide'}
+set.seed(13)
+n = dim(Boston)[1]
+train_index = sample(1:n,n*.9,replace=F)
+train_boston = Boston[train_index,]
+test_boston = Boston[-train_index,] 
+
+# subset selection 
+regfit.sbst = regsubsets(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=train_boston,nbest=1,nvmax=13) 
+regfit.sbst.sum = summary(regfit.sbst) 
+#regfit.sbst.sum
+
+n = dim(train_boston)[1]
+p = rowSums(regfit.sbst.sum$which)
+adjr2.sbst = regfit.sbst.sum$adjr2
+cp.sbst = regfit.sbst.sum$cp
+rss = regfit.sbst.sum$rss
+# use our own formulas for AIC and BIC 
+AIC.sbst = n*log(rss/n) + 2*(p)
+BIC.sbst = n*log(rss/n) + (p)*log(n)
+
+results.sbst = cbind(p,rss,adjr2.sbst,cp.sbst,AIC.sbst,BIC.sbst)
+#plot(p,BIC)
+#plot(p,AIC)
+
+which.min(AIC.sbst)
+which.min(BIC.sbst)
+which.min(cp.sbst)
+which.max(adjr2.sbst)
+
+
+val.errors.sbst = rep(NA,13)
+for(i in 1:13){
+  test.mat = model.matrix(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=test_boston)
+  
+  coef.m = coef(regfit.sbst,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors.sbst[i] = mean((test_boston$medv-pred)^2)
+}
+which.min(val.errors.sbst)
+val.errors.sbst[which.min(val.errors.sbst)]
+#coef(regfit.sbst,id=4)
+
+```
+
+```{r, warning=FALSE, message=FALSE, results = 'hide'}
+# forwards stepwise selection 
+regfit.fwd = regsubsets(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=Boston,nvmax=13, method="forward") 
+regfit.fwd.sum = summary(regfit.fwd)
+#regfit.fwd.sum
+
+n = dim(train_boston)[1]
+p = rowSums(regfit.fwd.sum$which) #number of predictors + intercept in the model 
+adjr2.fwd = regfit.fwd.sum$adjr2
+cp.fwd = regfit.fwd.sum$cp
+rss = regfit.fwd.sum$rss
+AIC.fwd = n*log(rss/n) + 2*(p)
+BIC.fwd = n*log(rss/n) + (p)*log(n)
+
+results.fwd = cbind(p,rss,adjr2.fwd,cp.fwd,AIC.fwd,BIC.fwd)
+
+which.min(AIC.fwd)
+which.min(BIC.fwd)
+which.min(cp.fwd)
+which.max(adjr2.fwd)
+
+
+val.errors.fwd = rep(NA,13)
+for(i in 1:13){
+  test.mat = model.matrix(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=test_boston)
+  
+  coef.m = coef(regfit.fwd,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors.fwd[i] = mean((test_boston$medv-pred)^2)
+}
+which.min(val.errors.fwd)
+val.errors.fwd[which.min(val.errors.fwd)]
+#coef(best.train,id=11)
+
+```
+
+```{r, warning=FALSE, message=FALSE, results = 'hide'}
+# backwards stepwise selection 
+regfit.bwd = regsubsets(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=Boston,nvmax=13, method="backward") 
+regfit.bwd.sum = summary(regfit.bwd)
+#regfit.fwd.sum
+
+n = dim(train_boston)[1]
+p = rowSums(regfit.bwd.sum$which) #number of predictors + intercept in the model 
+adjr2.bwd = regfit.bwd.sum$adjr2
+cp.bwd = regfit.bwd.sum$cp
+rss = regfit.bwd.sum$rss
+AIC.bwd = n*log(rss/n) + 2*(p)
+BIC.bwd = n*log(rss/n) + (p)*log(n)
+
+results.bwd = cbind(p,rss,adjr2.bwd,cp.bwd,AIC.bwd,BIC.bwd)
+
+which.min(AIC.bwd)
+which.min(BIC.bwd)
+which.min(cp.bwd)
+which.max(adjr2.bwd)
+
+
+val.errors.bwd = rep(NA,13)
+for(i in 1:13){
+  test.mat = model.matrix(medv~. -lstat + poly(lstat, 2, raw=TRUE),data=test_boston)
+  
+  coef.m = coef(regfit.bwd,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors.bwd[i] = mean((test_boston$medv-pred)^2)
+}
+which.min(val.errors.bwd)
+val.errors.bwd[which.min(val.errors.bwd)]
+#coef(best.train,id=11)
+
+```
+
+
+```{r, results = 'hide'}
+# test models 
+coef(regfit.sbst,id=12)
+coef(regfit.fwd,id=12)
+coef(regfit.bwd,id=12)
+
+results.sbst = results.sbst[12,]
+results.fwd = results.fwd[12,]
+results.bwd = results.bwd[12,]
+
+results = cbind(results.sbst, results.fwd, results.bwd)
+results
+
+
+kable(results, format = "html", caption='') %>% kable_styling()
+
+```
+
+```{r, results = 'hide'}
+coef(regfit.sbst,id=12)
+
+
+
+
+kable(coef(regfit.sbst,id=12), format = "html", caption='final model') %>% kable_styling()
+
+
+best_model = lm(medv~crim+zn+chas+nox+rm+age+dis+rad+tax+ptratio+poly(lstat,2,raw=TRUE), data=train_boston)
+
+kable(summary(best_model)$coefficients, format = "html", caption='final model') %>% kable_styling()
+summary(best_model)$coefficients
+
+
+
+```
+
+<!-- yhat = 46.920097460 - 0.160891474(crim) + 0.028550785(zn) + 2.560125956(chas) - 15.590762792(nox) + 2.855368327(rm) + 0.031549579(age) - 1.290807374(dis) + 0.242716082(rad) - 0.009609329(tax) - 0.726030034(ptratio) - 1.866390243(lstat) + 0.036464828(lstat^2)   -->
+
+
+
+# Problem 2: Forward and backward selection 
+## 2a 
+Mk from subset selection would have the smallest training MSE because it looks at all the combinations of predictors for that size and picks the one with the smallest RSS. The other two selection methods don't look at all possible models because they select models based on the current model. So forward stepwise will only look at models that contain the current predictors and one more, and backwards will look at ones with the current predictors minus one.  
+
+## 2b 
+Mk from subset selection would have the smallest test MSE. Since stepwise selection often choose a suboptimal model due to not considering all options, it will have the lowest test MSE.  
+
+## 2c 
+Yes, both forward and backwards selection led me to model 11. Both of these models have the same predictors and the same coefficients.  
+yhat = -179.38167 - 502.38015(PrivateYes) + 1.59780(Accept) - 0.64543(Enroll) + 47.25085(Top10perc)  - 12.87683(Top25perc) + 0.05612(P.Undergrad) - 0.09562(Outstate) + 0.13127(Room.Board) - 10.26581(PhD) + 0.08195(Expend) + 8.80283(Grad.Rate)  
+Since both models are exactly the same, their test MSE is the same: 897103.5  
+So this is our final model.  
+
+```{r}
+set.seed(13)
+n = dim(College)[1]
+train_index = sample(1:n,n*.9,replace=F)
+train_college = College[train_index,]
+test_college = College[-train_index,] 
+```
+
+```{r, results = 'hide'}
+regfit.fwd = regsubsets(Apps~.,data=train_college,nvmax=17, method="forward")
+regfit.bwd = regsubsets(Apps~.,data=train_college,nvmax=17, method="backward")
+
+#best model for forward 
+regfit.fwd.sum = summary(regfit.fwd)
+#names(regfit.fwd.sum)
+n = dim(train_college)[1]
+p = rowSums(regfit.fwd.sum$which) 
+rss = regfit.fwd.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+
+#plot(AIC,type='b')
+which.min(AIC) 
+
+#best model for backward 
+regfit.bwd.sum = summary(regfit.bwd)
+#names(regfit.fwd.sum)
+n = dim(train_college)[1]
+p = rowSums(regfit.bwd.sum$which) 
+rss = regfit.bwd.sum$rss
+AIC = n*log(rss/n) + 2*(p)
+
+#plot(AIC,type='b')
+which.min(AIC) 
+
+coef(regfit.fwd,id=11)
+coef(regfit.bwd,id=11)
+
+best.fwd = lm(Apps~Private + Accept + Enroll + Top10perc + Top25perc + P.Undergrad + Outstate + Room.Board + PhD + Expend + Grad.Rate, data=train_college)
+best.bwd = lm(Apps~Private + Accept + Enroll + Top10perc + Top25perc + P.Undergrad + Outstate + Room.Board + PhD + Expend + Grad.Rate, data=train_college)
+
+pred.fwd = predict(best.fwd, newdata=test_college)
+pred.bwd = predict(best.bwd, newdata=test_college)
+
+mse.fwd = mean((test_college$Apps-pred.fwd)^2)
+mse.bwd = mean((test_college$Apps-pred.bwd)^2)
+
+mse.fwd
+mse.bwd
+
+```
+
+```{r, results = 'hide'}
+# finding test MSE for fwd 
+val.errors = rep(NA,17)
+for(i in 1:17){
+  test.mat = model.matrix(Apps~.,data=test_college)
+  
+  coef.m = coef(regfit.fwd,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors[i] = mean((test_college$Apps-pred)^2)
+}
+#which.min(val.errors)
+val.errors[11]
+coef(regfit.fwd,id=11)
+
+
+
+# finding test MSE for bwd 
+val.errors = rep(NA,17)
+for(i in 1:17){
+  test.mat = model.matrix(Apps~.,data=test_college)
+  
+  coef.m = coef(regfit.bwd,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors[i] = mean((test_college$Apps-pred)^2)
+}
+#which.min(val.errors)
+val.errors[11]
+coef(regfit.bwd,id=11)
+
+```
+
+
+
+# Problem 3: A Puzzling Problem 
+The strange thing is that the intercept has a very statistically significant p value while the predictors are not significant. The coefficient values also have very high standard error values and very high p-values. This can happen if the predictors are highly correlated. With highly correlated predictors, you can still get estimates, but it is problematic. This leads to very small eigenvalues, which leads to very large standard errors and vey small test statistic values. Highly correlated predictors means that the hypothesis test has reduced power. 
+
+
+
+# Problem 4: Interaction Terms 
+
+## 4a 
+All categorical variables stored as factors.  
+```{r}
+str(Credit)
+
+```
+
+## 4b 
+yhat = 211.14 + 5.98(Income) + 382.67(StudentYes) 
+```{r, results = 'hide'}
+fit = lm(Balance~Income + Student, data=Credit)
+summary(fit)
+
+``` 
+
+## 4c 
+Student: yhat = 593.81 + 5.98(Income)  
+Non Student: yhat = 211.14 + 5.98(Income)  
+
+
+## 4d 
+For every 1,000 dollar increase in Income, balance increases by 5.98 dollars. This is the same for both because this model assumes that income affects balance at the same rate for both students and non students.  
+
+
+## 4e 
+This is not a reasonable constraint. While an increased income would generally increase balance, it wouldn't affect students and non students the same because they would have different expenses. Students would be paying off tuition which would affect their balance differently than non students who are paying for rent, utilities, and food. The plot below shows income vs balance groups by student and non student with the best fit line for each. The best fit lines clearly have different slopes, indicating that income affects balance different for students vs non students.  
+
+```{r}
+plot(Credit$Income, Credit$Balance, col=Credit$Student)
+
+ggplot(Credit, aes(x=Income, y=Balance, colour = Student)) + geom_point() + geom_smooth(method = "lm", fill = NA)
+
+``` 
+
+## 4f 
+Students: yhat = 677.30 + 4.22(Income)  
+Non Students: yhat = 200.62 + 6.22(Income)  
+```{r, results = 'hide'}
+new_fit = lm(Balance ~ Income + Student + Income:Student, data=Credit)
+summary(new_fit)
+
+``` 
+
+## 4g 
+For students, for every 1,000 dollar increase in income, balance increases by 4.22 dollars.  
+For non students, for every 1,000 dollar increase in income, balance increases by 6.22 dollars.  
+
+
+
+
+

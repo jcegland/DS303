@@ -141,25 +141,82 @@ kable(coef(best_mod,id=3), format = "html", caption='M3') %>% kable_styling()
 # Problem 2: Simulation Studies 
 
 ## 2a 
-
-
-
-
-
+generating dataset: all betas except for 1,2,3,4,5,6,10,11 are equal to 0.  
 ```{r}
+#set.seed(1)
 p=20 
-n=100 
-error = rnorm(100,0,1)
-#Y = X*Beta + error 
+n=1000 
+X = matrix(NA, nrow=1000, ncol=20)
+  for (i in 1:20){
+    X[,i] = rnorm(1000)
+  }
+X = cbind(rep(1,1000), X)
+
+betas = c(0,5,3,6,9,4,0,0,0,2,1,0,0,0,0,0,0,0,0,0,0)
+error = rnorm(1000,0,1)
+Y = X%*%betas + error 
+
 
 ```
 
-
-
+# 2b 
+split into test (size 100) and train (size 900). 
 ```{r}
-
+test_index = sample(1:1000, 100, rep=FALSE)
+df = data.frame(X, Y)
+test = data.frame(Y = Y[test_index], X[test_index,])
+train = data.frame(Y = Y[-test_index], X[-test_index,])
+#test = df[test_index, ]
+#train = df[-test_index, ]
 
 ```
+
+# 2c 
+Training MSE for each best model:  
+best training MSE is model 20.  
+```{r}
+regfit = regsubsets(Y~.-X1, data=train, nbest=1,nvmax=20)
+regfit.sum = summary(regfit) 
+plot(regfit.sum$rss/20)
+#which.min(regfit.sum$rss/20)
+
+```
+
+# 3d 
+Test MSE for each best model:  
+```{r}
+## finds test MSE 
+val.errors = rep(NA,20)
+for(i in 1:20){
+  test.mat = model.matrix(Y~.,data=test)
+  
+  coef.m = coef(regfit,id=i)
+  
+  pred = test.mat[,names(coef.m)]%*%coef.m
+  val.errors[i] = mean((test$Y-pred)^2)
+}
+
+plot(val.errors)
+
+```
+
+# 3e 
+Model 8 has the minimum test MSE value. It did not continue to decrease when more predictors were added like the training MSE did. 
+```{r, results = 'hide'}
+which.min(val.errors)
+#coef(regfit,id=which.min(val.errors)) 
+
+```
+
+# 3f 
+The model with the best test MSE is a model with 8 predictors, which is the same as the true model. The true model had 8 predictors with the rest of the betas equal to 0. The predictors picked by the best model were the same predictors in the true model that weren't equal to 0, with very close to the true beta values. 
+```{r}
+coef(regfit,id=which.min(val.errors)) 
+#summary(regfit)
+
+```
+
+
 
 # Problem 3: Cross-validation 
 
