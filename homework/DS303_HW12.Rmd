@@ -1,0 +1,219 @@
+---
+title: "HW12"
+author: "Jillian Egland"
+date: "2023-11-29"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, message=FALSE}
+## imports 
+library(ISLR2)
+```
+
+# Problem 1: Concept Review 
+## 1a 
+To determine whether or not clusters are valid, we can look at the within cluster variation and the between cluster variation. We want the within cluster variation to be low and the between cluster variation to be high. So we can create an ratio of the within cluster variation to the between cluster variation. So the sum of the average distance between each point in each cluster divided by the distance between the cluster centers. Then divide the sum of these ratios by the number of clusters. The lower this score is, the better the separation of the clusters. This will produce a numerical value for evaluating clusters. You could then try different methods of clustering with different amounts of clusters and different linkage types to see if the same clusters emerge and test those clusters with this numerical evaluation.  
+
+## 1b 
+i) These will not fuse at the same height. Since one uses single and the other uses complete, they use different measures to decide when to fuse. The single linkage will look at the closest distance between the 2 groups, while complete will use the largest distance between them. These will give different values unless each the points in one cluster are the same distance away from each of the points in the other cluster for some reason, which is not possible.  
+
+ii) These will fuse at the same height. Even though they use two different measures to decide when to fuse, since it is just a single node in each cluster, they will have the same distance apart no matter which method is used.  
+
+## 1c 
+i) PVE using std  
+```{r}
+pr.out = prcomp(USArrests,scale=TRUE) 
+pr.var = pr.out$sdev^2
+
+#pr.var = svd(X)$d^2/49
+pve = pr.var / sum(pr.var)
+
+pve
+
+```
+ii)  PVE using formula  
+```{r}
+## principal component loadings: 
+loadings = pr.out$rotation
+
+## X times loadings to get Z scores manually 
+Xij = as.matrix(scale(USArrests))
+Z = (Xij %*% loadings)^2
+
+numerator = colSums(Z)
+
+denom = sum(Xij^2)
+
+numerator/denom
+
+
+```
+
+## 1d 
+****come back to this**** 
+![](IMG_1342.jpg){width=50%}  
+
+Y = BhatX  
+
+
+# Problem 2: Simulations for Unsupervised Learning
+
+```{r}
+## 2a
+set.seed(1)
+set.seed(1)
+c1 = c2 = c3 = matrix(NA,nrow=20,ncol=50)
+for(i in 1:20){
+    c1[i,]= rnorm(50,2,1.5)
+    c2[i,] = rnorm(50,3,1.5)
+    c3[i,] = rnorm(50,4,1.5)
+}
+data = rbind(c1,c2,c3)
+
+
+```
+
+## 2b 
+PVE for first two PC:  
+```{r}
+pr.out = prcomp(data,scale=TRUE) 
+pr.out$sdev[1:2]
+
+```
+
+## 2c 
+The PCA is created such that the first principle component creates a linear combination of features in a way that explains the most variance. The second component finds the linear combination after that that explains the next most variance. So it doesn't just find the one most interesting predictor, it combines them to find the most interesting directions.  
+
+## 2d 
+The groups are fairly well separated with a few exceptions.  
+```{r}
+colors = c(rep('red', 20), rep('green', 20), rep('blue', 20)) 
+plot(pr.out$x[,1:2], col=colors)
+
+
+```
+
+## 2e 
+k means with 3 clusters. This captures the clusters fairly well, with 5 data points mislabeled. 3 of the mislabeled data points came from true cluster 2 and 1 from each true cluster 1 and 3.  
+```{r}
+#data=as.data.frame(data)
+#data$class = as.data.frame(rep(NA, 60))
+
+
+km.out <- kmeans(data,3,nstart=20) #nstart should be at least 20
+#km.out
+#km.out$cluster
+
+true_clust = c(rep(1, 20), rep(2, 20), rep(3,20))
+table(km.out$cluster, true_clust)
+
+```
+
+## 2f
+k means with 2 clusters:  
+true clusters 1 and 3 got separated into cluster 1 and 2, and true cluster 2 was split fairly evenly between cluster 1 and 2 
+```{r}
+km.out <- kmeans(data,2,nstart=20) #nstart should be at least 20
+#km.out
+#km.out$cluster
+
+true_clust = c(rep(1, 20), rep(2, 20), rep(3,20))
+table(km.out$cluster, true_clust)
+
+
+```
+
+## 2g 
+k means with 4 clusters:  
+Most of true cluster 1 was put into cluster 1 and all of true cluster 3 was put into cluster 3. True cluster 2 was mostly put into cluster 4 with some in cluster 2. 
+```{r}
+km.out <- kmeans(data,4,nstart=20) #nstart should be at least 20
+#km.out
+#km.out$cluster
+
+true_clust = c(rep(1, 20), rep(2, 20), rep(3,20))
+table(km.out$cluster, true_clust)
+
+
+```
+
+## 2h 
+k means clustering with 3 clusters in PCA  
+Using PCA captured the clusters better than the normal data did with only 2 data points in the wrong clusters. This is because the PCA can filter out the random noise of the data which leads to less overfitting.  
+```{r} 
+km.out <- kmeans(pr.out$x[,1:2],3,nstart=20) 
+#km.out
+#km.out$cluster
+
+true_clust = c(rep(1, 20), rep(2, 20), rep(3,20))
+table(km.out$cluster, true_clust)
+
+
+```
+
+
+# Problem 3: Matrix Completion 
+## 3a 
+
+```{r} 
+X = data.matrix(scale(Boston))
+
+nomit = 20
+set.seed(15)
+ina = sample(seq(50), nomit)
+inb = sample(1:4, nomit, replace = TRUE)
+Xna = X
+index.na = cbind(ina, inb)
+Xna[index.na] = NA
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+```{r} 
+
+
+
+```
+
+
+
+```{r} 
+
+
+
+```
+
+
+
+```{r} 
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

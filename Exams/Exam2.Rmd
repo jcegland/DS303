@@ -1,0 +1,182 @@
+---
+title: "Exam 2"
+author: "Jillian Egland"
+date: "2023-10-27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r, message=FALSE}
+library(ggplot2)
+library(glmnet)
+library(ISLR2)
+library(MASS)
+library(e1071)
+```
+
+
+```{r, results='hide'}
+heart = read.table('https://hastie.su.domains/ElemStatLearn/datasets/SAheart.data', sep=",",head=T,row.names=1)
+heart$famhis = as.factor(heart$famhist)
+head(heart)
+str(heart)
+
+```
+
+
+# Question 2: Coding 
+
+## 2a 
+probability of Y=1 when age=50: 
+```{r} 
+x=data.frame(age=50)
+glm.fit = glm(chd~age, data=heart, family='binomial')
+#summary(glm.fit)
+#heart[heart$age==50,]
+#head(glm.fit$fitted.values)
+
+glm.prob = predict(glm.fit,heart[heart$age==50,],type='response') 
+glm.prob = predict(glm.fit,x,type='response') 
+
+prob_star = (glm.prob)[[1]]
+prob_star
+
+
+
+
+
+```
+
+## 2b 
+standard error of P(Y=1|age=50):  
+```{r}
+x=data.frame(age=50)
+## bootstrap standard errors
+n = dim(heart)[1]
+B = 1000
+prob = rep(0,B)
+for(b in 1:B){
+  index = sample(1:n,n,replace=TRUE)
+  bootsample = heart[index,]
+  glm.fit = glm(chd~age, data=bootsample, family='binomial')
+  #glm.prob = predict(glm.fit,bootsample[bootsample$age==50,],type='response') 
+  glm.prob = predict(glm.fit,x,type='response') 
+  prob[b] = glm.prob
+}
+
+sqrt(sum((prob-mean(prob))^2)/(B-1))
+
+
+```
+
+
+## 2c 
+confidence interval for P(Y=1|age=50):  
+```{r}
+##bootstrap confidence intervals
+#p_star = above
+se_prob_star = 0.026 
+x=data.frame(age=50)
+
+B = 100
+m = 100
+Fstar = rep(0,B)
+prob_m = rep(0,m)
+
+for(b in 1:B){
+  index = sample(1:n,n,replace=TRUE)
+  bootsample=heart[index,]
+  #fit = lm(mpg~horsepower,data=bootsample)
+  #beta0 =  coef(fit)[1]
+  glm.fit = glm(chd~age, data=bootsample, family='binomial')
+  glm.prob = predict(glm.fit,x,type='response') 
+  prob = glm.prob
+  
+  for(i in 1:m){
+    index2 = sample(index,n,replace=TRUE)
+    bootsample2 = heart[index2,]
+    #fit2 = lm(mpg~horsepower,data=bootsample2)
+    #beta0_m[i] = coef(fit2)[1]
+    glm.fit = glm(chd~age, data=bootsample2, family='binomial')
+    #glm.prob = predict(glm.fit,bootsample2[bootsample2$age==50,],type='response') 
+    glm.prob = predict(glm.fit,x,type='response') 
+    prob_m[i] = glm.prob
+    #prob_m[i] = (glm.prob)[[1]]
+  }
+  se_prob = sqrt(sum((prob_m-mean(prob_m))^2)/(m-1))
+
+  Fstar[b] = (prob - prob_star)/se_prob
+  #print(Fstar[b])
+}
+
+
+#95% confidence interval
+#quantile(Fstar,c(0.025,0.975))
+prob_star + quantile(Fstar,0.025)*se_prob_star
+prob_star + quantile(Fstar,0.975)*se_prob_star
+
+
+
+```
+
+
+## 2d
+Plot below shows that there seems to be a difference in the slopes of tobacco vs chd diagnosis depending on family history.  
+```{r}
+ggplot(heart, aes(x=tobacco, y=chd, colour = famhist)) + geom_point() + geom_smooth(method = "lm", fill = NA)
+
+```
+
+Misclassification rate for model without interaction:  
+```{r}
+n = dim(heart)[1]
+train_index = sample(1:n,n/2,replace=F)
+train = heart[train_index,]
+test = heart[-train_index,] 
+
+
+glm.fit = glm(chd ~ age  + famhist, data=train, family='binomial') ## specify your dataset
+#summary(glm.fit)
+
+glm.prob = predict(glm.fit,test,type='response') 
+glm.pred = rep(0,nrow(test))
+glm.pred[glm.prob >0.5] =1
+table(glm.pred,test$chd)
+mean(glm.pred != test$chd)
+
+```
+false negative rate: .605  
+
+
+With interaction:  
+```{r}
+n = dim(heart)[1]
+#train_index = sample(1:n,n/2,replace=F)
+train = heart[train_index,]
+test = heart[-train_index,] 
+
+
+glm.fit.interact = glm(chd ~ age + tobacco + famhist + tobacco*famhist, data=heart,family='binomial') 
+#summary(glm.fit)
+
+glm.prob.interact = predict(glm.fit.interact,test,type='response') 
+glm.pred.interact = rep(0,nrow(test))
+glm.pred.interact[glm.prob.interact >0.5] =1
+table(glm.pred.interact,test$chd)
+mean(glm.pred.interact != test$chd)
+
+```
+false negative rate: .568  
+
+It is worse to say someone doesn't have chd when they actual do have chd so we want to have a lower false negative rate. The 2 models have similar misclassification rates based on the training and test split, so I would look at the false negative rate. The model with the interaction has a lower false negative rate, so I would choose that model.  
+
+
+
+
+
+
+
+
+

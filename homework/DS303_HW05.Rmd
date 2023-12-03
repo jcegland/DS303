@@ -209,8 +209,12 @@ summary(best_model)$coefficients
 ## 2a 
 Mk from subset selection would have the smallest training MSE because it looks at all the combinations of predictors for that size and picks the one with the smallest RSS. The other two selection methods don't look at all possible models because they select models based on the current model. So forward stepwise will only look at models that contain the current predictors and one more, and backwards will look at ones with the current predictors minus one.  
 
+subset will have the smallest RSS (which is a function of training MSE). forward/backwards are greedy and will not necessarily return the smallest RSS 
+
 ## 2b 
 Mk from subset selection would have the smallest test MSE. Since stepwise selection often choose a suboptimal model due to not considering all options, it will have the lowest test MSE.  
+
+possible that any 3 will have the smallest test MSE since we have not seen the test data before 
 
 ## 2c 
 Yes, both forward and backwards selection led me to model 11. Both of these models have the same predictors and the same coefficients.  

@@ -1,0 +1,274 @@
+---
+title: "HW08"
+author: "Jillian Egland"
+date: "2023-10-19"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r, message=FALSE}
+library(ggplot2)
+library(ISLR2)
+library(MASS)
+library(e1071)
+```
+
+# Problem 1: Concept Review
+## 1a 
+To obtain estimates for Beta when fitting a logistic regression model, we use the maximum likelihood estimation to minimize Beta hats. The estimation tells us the probability of seeing the data we do given the X parameters. So we pick beta values that maximize those probabilities. We also use the sigmoid function to restric the function to be between 0 and 1.  
+
+## 1b 
+using .5 will give us the smallest overall misclassification rate because it mimics Bayes rule which gives us the lowest possible error.  
+
+## 1c 
+Misclassification rate: 57/218 = .261  
+In this medical context, it is more troubling to classify someone as healthy when they are actually sick than it is to classify someone as sick when they are healthy. So a false negative is more troubling.  
+To decrease the false negative rate, we can decrease the threshold level to >.25 or something less than .5, this way we are more likely to classify someone as sick even if they aren't which errs of the safer side.  
+This will increase our misclassification rate slightly since we are deviating from .5  
+
+## 1d 
+i) P(Y=1)|X1=40, X2=3.5) = exp(beta0+beta1\*X1 + beta2\*X2)/(1+exp(beta0+beta1\*X1 + beta2\*X2)) = 
+```{r}
+beta0=-6 
+beta1=.05 
+beta2=1 
+X1=40 
+X2=3.5 
+
+exp(beta0+beta1*X1 + beta2*X2)/(1+exp(beta0+beta1*X1 + beta2*X2)) 
+
+
+```
+
+ii) 
+student in part (i) would need to study 50 hours to get a 50% chance of getting an A.  
+```{r, results = 'hide'}
+beta0=-6 
+beta1=.05 
+beta2=1 
+X1=50 
+X2=3.5 
+
+exp(beta0+beta1*X1 + beta2*X2)/(1+exp(beta0+beta1*X1 + beta2*X2)) 
+```
+
+## 1e 
+I would expect LDA to perform better on the testing set. QDA is a more flexible model and would be overfitting to the training set because only a linear model is needed. QDA would have much more variance. 
+
+## 1f 
+I would expect QDA to perform better on the training set. Since only a linear model is needed, QDA would overfit to the training data and would have a lot of variance. 
+
+## 1g 
+coefficient estimates for betas:  
+```{r}
+set.seed(1) 
+x1 = sample(16)
+x2=sample(16)
+y=rep(1, 16)
+y[x1<8]=0
+
+data = data.frame(x1,x2,y)
+#str(data)
+
+
+#ggplot(data, aes(x=x2, y=y, color=y)) + geom_point(size=2)
+
+glm.fit = glm(y~x1+x2, data=data,family='binomial')
+
+coef(summary(glm.fit))
+#summary(glm.fit)
+
+#glm.pred = rep('No',length(test))
+#glm.pred[glm.prob >0.5] ='Yes'
+#table(glm.pred,Default[test,]$default)
+#1-mean(glm.pred == Default[test,]$default)
+
+```
+
+## 1h 
+the misclassification rate for lda and qda were both 0. We were able to get meaningful results because lda and qda account for the limitations in logistic when the data is evenly split. The misclassification rate would be 0 because the data is evenly split.    
+```{r, results='hide'}
+data$y = as.factor(data$y)
+
+lda.fit = lda(y~x1+x2,data=data)
+lda.pred = predict(lda.fit,data)
+mean(lda.pred$class!=y)
+
+## QDA 
+qda.fit = qda(y~x1+x2,data=data)
+qda.pred = predict(qda.fit,data)
+
+mean(qda.pred$class!=data$y)
+
+
+```
+
+
+# Problem 2: Email Spam 
+## 2a 
+Spam: .394  
+Not Spam: .606  
+```{r, results = 'hide'}
+spam = read.csv("/Users/jillianeglandschool/Desktop/DS303/spambase.data",header=FALSE)
+
+
+#considered spam 
+nrow(spam[spam$V58=='1',])/nrow(spam)
+
+#not considered spam 
+nrow(spam[spam$V58=='0',])/nrow(spam)
+
+
+```
+
+## 2b 
+the proportions in the training and test set are similar to the original dataset  
+train spam: 0.403  
+train not spam: 0.597  
+test spam: 0.385  
+test not spam: 0.614  
+```{r}
+set.seed(1)
+n = dim(spam)[1]
+train_index = sample(1:n,n/2,replace=F)
+train_spam = spam[train_index,]
+test_spam = spam[-train_index,] 
+
+#considered spam 
+nrow(train_spam[train_spam$V58=='1',])/nrow(train_spam)
+#not considered spam 
+nrow(train_spam[train_spam$V58=='0',])/nrow(train_spam)
+
+#considered spam 
+nrow(test_spam[test_spam$V58=='1',])/nrow(test_spam)
+#not considered spam 
+nrow(test_spam[test_spam$V58=='0',])/nrow(test_spam)
+
+
+```
+
+## 2c 
+P(Y=1) for the first 10 observations: 
+```{r, warning=FALSE}
+glm.fit = glm(V58~., data=train_spam, family='binomial')
+
+glm.prob = predict(glm.fit,test_spam,type='response') 
+head(glm.prob, 10)
+
+```
+
+## 2d 
+overall misclassification: 0.0734  
+false negative rate: .1027  
+false positive rate: .0551  
+```{r}
+glm.pred = rep('0',nrow(test_spam))
+glm.pred[glm.prob >0.5] ='1'
+table(glm.pred,test_spam$V58)
+
+1-mean(glm.pred == test_spam$V58)
+
+#rows are predicted, # columns are true 
+
+# false positive rate: FP/(FP+TN) = 78/(78+1337) = .0551 
+# false negative rate: FN/(FN+TP) = 91/(91+795) = .1027 
+```
+
+## 2e 
+It would be worse to label an email as spam when it wasn't than to label an email as not spam when it was spam. We want to increase our threshold past .5 so that we make sure that an email really is spam before labeling it as so. In doing so our overall misclassification rate is now .0952 but our false positive rate is now .0318  
+```{r}
+glm.pred = rep('0',nrow(test_spam))
+glm.pred[glm.prob >0.75] ='1'
+#table(glm.pred,test_spam$V58)
+
+#1-mean(glm.pred == test_spam$V58)
+
+```
+
+# Problem 3: Weekly data set
+## 3a 
+```{r}
+glm.fit = glm(Direction~.-Year-Today, data=Weekly, family='binomial')
+summary(glm.fit)
+```
+
+## 3b 
+Overall correct classification rate: .5611  
+Confusion matrix:  
+```{r}
+glm.prob = predict(glm.fit,Weekly,type='response') 
+glm.pred = rep('Down',nrow(Weekly))
+glm.pred[glm.prob >0.5] ='Up'
+table(glm.pred,Weekly$Direction)
+
+## correct classification rate 
+#mean(glm.pred == Weekly$Direction)
+
+
+```
+false positives: 430/(430+54) = .8884  
+false negatives: 48/(48+557)= .0793 
+This logistic regression makes more false positives than false negatives. So it predicts more to be up when they are actually down than it does predicting them as down when they are actually up.  
+
+
+## 3c 
+overall correct classification rate: 0.625  
+```{r}
+train_weekly = Weekly[Weekly$Year>=1990 & Weekly$Year<=2008, ]
+test_weekly = Weekly[Weekly$Year>2008, ] 
+
+glm.fit = glm(Direction~Lag2, data=train_weekly, family='binomial')
+#summary(glm.fit)
+glm.prob = predict(glm.fit,test_weekly,type='response') 
+glm.pred = rep('Down',nrow(test_weekly))
+glm.pred[glm.prob >0.5] ='Up'
+table(glm.pred,test_weekly$Direction)
+
+mean(glm.pred == test_weekly$Direction)
+
+```
+
+
+## 3d 
+LDA:  
+```{r}
+lda.fit = lda(Direction~Lag2,data=train_weekly)
+lda.pred = predict(lda.fit,test_weekly)
+table(lda.pred$class,test_weekly$Direction)
+mean(lda.pred$class==test_weekly$Direction)
+
+```
+
+
+## 3e
+QDA:  
+```{r}
+qda.fit = qda(Direction~Lag2,data=train_weekly)
+qda.pred = predict(qda.fit,test_weekly)
+
+table(qda.pred$class,test_weekly$Direction)
+
+mean(qda.pred$class==test_weekly$Direction)
+
+```
+
+
+## 3f 
+Naive Bayes:  
+```{r}
+nb.fit = naiveBayes(Direction~Lag2, data=train_weekly)
+#nb.fit
+
+nb.class = predict(nb.fit, test_weekly)
+table(nb.class, test_weekly$Direction)
+mean(nb.class == test_weekly$Direction)
+
+```
+
+
+
+
+
+

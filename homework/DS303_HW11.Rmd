@@ -1,0 +1,357 @@
+---
+title: "HW11"
+author: "Jillian Egland"
+date: "2023-11-15"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r, message=FALSE}
+## imports 
+library(ISLR2)
+library(caret)
+library(gbm)
+library(randomForest)
+library(tree)
+```
+
+
+# Problem 2: Boosting
+
+```{r}
+## 2a 
+Hitters = na.omit(Hitters) 
+Hitters$Salary = log(Hitters$Salary)
+
+
+```
+
+```{r}
+## 2b 
+n = dim(Hitters)[1]
+train_hitters = Hitters[1:200,]
+test_hitters = Hitters[201:n,]
+
+
+```
+
+## 2c 
+number of trees: 3000  
+depth: 5  
+shrinkage: .01  
+```{r, results = 'hide'}
+formula <- Salary~.
+
+mygrid <- expand.grid(interaction.depth = c(1,3,5),
+                        n.trees = c(100,200,300),
+                        n.minobsinnode = 5,
+                        shrinkage = c(0.001,0.01,0.1))
+
+set.seed(100)
+gbm_model <- train(formula, 
+                   data = train_hitters,
+                   method = "gbm",
+                   tuneGrid = mygrid,
+                   trControl = trainControl(method = "cv",number=10))
+
+#names(gbm_model)
+gbm_model
+```
+
+
+## 2d 
+The most important predictor is CAtBat, followed by CWalks and CRuns 
+```{r}
+boost.hitters = gbm(Salary~.,data=train_hitters, distribution = "gaussian", n.trees=3000, interaction.depth = 5, shrinkage = c(0.01)) 
+summary(boost.hitters)
+
+```
+
+## 2e 
+test MSE for boosting:  
+```{r}
+yhat.boost = predict(boost.hitters, newdata=test_hitters, n.trees=3000)
+
+mean((yhat.boost-test_hitters$Salary)^2)
+
+
+```
+
+## 2f 
+tuning parameter m:  
+```{r}
+flds <- createFolds(train_hitters$Salary, k = 10, list = TRUE, returnTrain = FALSE)
+
+## 19 predictors for Salary 
+M= c(1:19) 
+
+cv_error = matrix(NA, 10, 19)
+
+for(j in 1:19){
+  m = M[j]
+  for(i in 1:10){
+    test_index = flds[[i]]
+    
+    train.cv = train_hitters[-test_index,]
+    test.cv = train_hitters[test_index,]
+    
+    rf.car = randomForest(Salary ~., data = train.cv, mtry = m, importance = TRUE, ntree = 500)
+    
+    yhat.rf = predict(rf.car, newdata = test.cv, type='response') 
+    #error_list[m] = mean(yhat.rf != test$High) 
+    
+    
+    cv_error[i,j] = mean((test.cv$Salary - yhat.rf)^2)
+  }
+}
+
+#mean of the columns 
+#apply(cv_error,2,mean)
+bestMIndex = which.min(apply(cv_error,2,mean))
+
+best_m = M[bestMIndex]
+best_m
+
+
+```
+This value of m was selected using k fold validation  
+
+
+test MSE for random forest:  
+```{r}
+rf.hitters = randomForest(Salary ~., data = train_hitters, mtry = best_m, importance = TRUE, ntree = 500)
+
+yhat.rf = predict(rf.hitters, newdata = test_hitters) 
+mean((yhat.rf - test_hitters$Salary)^2)
+
+
+```
+
+
+# Problem 3: Bias of Trees
+## 3a 
+first 5 predictions for Xi=1:  
+```{r}
+set.seed(1) # so we all get the same x values. 
+n = 100
+p = 20
+Xmat = matrix(NA,nrow=n,ncol=p)
+for(i in 1:p){
+  Xmat[,i] = rnorm(n)
+}
+beta = rep(seq(1,3,length.out=5),4)
+
+pred_X_1 = rep(NA, 1000)
+## simulate 1000 training sets 
+for (i in 1:1000){
+  Y = Xmat%*%beta + rnorm(n,0,1)
+  train_set = data.frame(Xmat,Y)
+  
+  # train decision tree 
+  tree.Xmat = tree(Y~.,data=train_set)
+  new_data = data.frame(X1=1, X2=1, X3=1, X4=1, X5=1, X6=1, X7=1, X8=1, X9=1, X10=1, 
+                X11=1, X12=1, X13=1, X14=1, X15=1, X16=1, X17=1, X18=1, X19=1, X20=1)
+  tree.pred = predict(tree.Xmat, newdata=new_data)
+  pred_X_1[i] = tree.pred[[1]]
+  
+}
+
+head(pred_X_1, 5)
+
+
+```
+
+## 3b 
+Bias for single tree when Xi=1:  
+```{r}
+true_y = rep(1, 20)%*%beta
+true_y = true_y[[1]]
+# bias = (E(pred x) - true_y)^2 
+(mean(pred_X_1) - true_y)^2 
+
+```
+
+Variance for single tree when Xi=1:  
+```{r}
+# var = E(pred_y - mean(pred_y))^2
+mean(pred_X_1 - mean(pred_X_1))^2 
+
+```
+
+## 3c 
+
+```{r}
+pred_X_1 = rep(NA, 1000)
+## simulate 1000 training sets 
+for (i in 1:1000){
+  Y = Xmat%*%beta + rnorm(n,0,1)
+  train_set = data.frame(Xmat,Y)
+  
+  # train random forest
+  rf.Xmat = randomForest(Y~.,data=train_set, mtry = 10, importance = TRUE, ntree=200)
+  new_data = data.frame(X1=1, X2=1, X3=1, X4=1, X5=1, X6=1, X7=1, X8=1, X9=1, X10=1, 
+                X11=1, X12=1, X13=1, X14=1, X15=1, X16=1, X17=1, X18=1, X19=1, X20=1)
+  tree.pred = predict(rf.Xmat, newdata=new_data)
+  pred_X_1[i] = tree.pred[[1]]
+  
+}
+
+head(pred_X_1, 5)
+
+
+```
+
+## 2d 
+
+Bias for random forest when Xi=1:  
+```{r}
+true_y = rep(1, 20)%*%beta
+true_y = true_y[[1]]
+# bias = (E(pred x) - true_y)^2 
+(mean(pred_X_1) - true_y)^2 
+
+```
+
+Variance for random forest when Xi=1:  
+```{r}
+# var = E(pred_y - mean(pred_y))^2
+mean(pred_X_1 - mean(pred_X_1))^2 
+
+```
+
+## 3e 
+the squared bias increased between using a single tree and using random forest 
+
+## 3f 
+the variance decreased between using a single tree and using random forest 
+
+## 3g 
+So when using an ensemble method over a single decision tree, you get more bias but less variance. 
+
+
+# Problem 4: Understanding K-Means
+## 4a 
+![](IMG_1342.jpg){width=50%} 
+
+## 4b 
+With each iteration, we assign each observation to the centroid that they are closest to. This will decrease the within cluster observation each time 
+
+## 4c 
+i) plot for observations:  
+```{r}
+## i 
+X1 = c(1,1,0,5,6,4)
+X2 = c(4,3,4,1,2,0)
+data = data.frame(cbind(X1, X2))
+
+plot(X1, X2)
+
+```
+
+ii) random assignment of clusters:  
+```{r}
+## ii 
+set.seed(4)
+rand_clust = sample(1:2, 6, replace = TRUE)
+data = data.frame(cbind(data, rand_clust))
+
+rand_clust
+
+
+```
+
+iii) centroids for cluster 1 and 2 respectively:  
+```{r}
+clust1 = data[data$rand_clust == 1,]
+clust2 = data[data$rand_clust == 2,]
+
+
+centroid1 = c(sum(clust1$X1)/nrow(clust1), sum(clust1$X2)/nrow(clust1))
+centroid2 = c(sum(clust2$X1)/nrow(clust2), sum(clust2$X2)/nrow(clust2))
+
+centroid1
+centroid2
+
+```
+
+iv & v)  
+centroids and clusters for the first 2 iterations:  
+```{r, warning=FALSE}
+count = 0
+new_cent1 = centroid1
+new_cent2 = centroid2
+
+curr_cent1 = -1
+curr_cent2 = -1 
+
+prev_clusters = c(-1, -1, -1, -1, -1, -1)
+new_clusters = data[,3]
+
+while (!identical(prev_clusters, new_clusters)){
+  prev_clusters = new_clusters
+  #curr_cent1 = new_cent1
+  #curr_cent2 = new_cent2 
+  
+  for (i in 1:6){
+    dist1 = sqrt(sum((data[i, 1:2] - centroid1)^2))
+    dist2 = sqrt(sum((data[i, 1:2] - centroid2)^2))
+    dist1
+    dist2
+    if (dist1<dist2){
+      data[i, 3] = 1
+    }else{
+      data[i, 3] = 2
+    }
+    
+  }
+  clust1 = data[data$rand_clust == 1,]
+  clust2 = data[data$rand_clust == 2,]
+  new_clusters = data[i, 3]
+  
+  centroid1 = c(sum(clust1$X1)/nrow(clust1), sum(clust1$X2)/nrow(clust1))
+  centroid2 = c(sum(clust2$X1)/nrow(clust2), sum(clust2$X2)/nrow(clust2))
+  
+  if (count<3 && !identical(prev_clusters, new_clusters)){
+    print(data[,3])
+    print("centroid 1: ")
+    print(centroid1)
+    print("centroid 2: ")
+    print(centroid2)
+  }
+  
+  count = count + 1 
+}
+
+#count
+
+
+```
+
+vi) 
+```{r}
+plot(X1, X2, col = data[,3], pch = 19)
+
+
+```
+
+# Problem 5: Dendrogram 
+## 5a & b
+
+![](IMG_1256.jpg){width=50%} 
+
+## 5c 
+cluster 1: observations 1 & 2  
+cluster 2: observations 3 & 4  
+
+## 5d 
+cluster 1: observations 1, 2, & 3  
+cluster 2: observation 4  
+
+
+
+
+
+
+

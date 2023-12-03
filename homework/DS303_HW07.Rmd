@@ -26,9 +26,10 @@ The shape of the l1 penalty used in lasso regression creates a diamond since the
 ## 1b 
 a) as lambda increases, training MSE will:  
    ii. decrease initially, then eventually start increasing in a U shape, a larger lambda will increase the model's prediction, but adding too much bias will result in moving the model towards underfitting which will increase training MSE. 
+   (answer) RSS will steadily increase as lambda increases from 0 
 
 b) as lambda increases, test MSE will:  
-   ii. decrease initially, then eventually start increasing in a U shape, larger lambda means adding more bias into the model which will decrease the test MSE by decreasing variance, but adding too much bias will result in a higher test MSE  
+   ii. decrease initially, then eventually start increasing in a U shape, larger lambda means adding more bias into the model which will decrease the test MSE by decreasing variance, but adding too much bias will result in a higher test MSE (increases when bias no longer offsets the var)  
 
 c) as lambda increases, variance will:  
    iv. steadily decrease, larger lambda means adding more bias into the model, which reduces the variance  

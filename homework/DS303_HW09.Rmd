@@ -1,0 +1,398 @@
+---
+title: "HW09"
+author: "Jillian Egland"
+date: "2023-10-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r, message=FALSE}
+library(ISLR2)
+library(class)
+library(caret)
+library(MASS)
+library(ROCR)
+library(e1071)
+```
+
+# Problem 1: MNIST handwritten digit database
+## 1a
+
+```{r sourceCode}
+# use source() function to source the functions we want to execute
+source("mnist_load_script.R")
+```
+
+```{r, results='hide'}
+# modified to load fashion mnist as fashion_train and fashion_test 
+load_mnist() 
+
+```
+optimal k is 5  
+misclassification rate: 0.08   
+confusion matrix:  
+```{r}
+# choosing 3000 observations for training and 100 for test 
+index.train = sample(1:dim(train$x)[1], 3000, replace=FALSE)
+train$x=train$x[index.train,]
+train$y=train$y[index.train]
+index.test = sample(1:dim(test$x)[1], 100, replace=FALSE)
+test$x=test$x[index.test,]
+test$y=test$y[index.test]
+
+flds <- createFolds(train$y, k = 10, list = TRUE, returnTrain = FALSE)
+#names(flds)
+
+K= c(1,5,7,9) # nearest neighbor values
+
+cv_error = matrix(NA, 10, 4)
+
+for(j in 1:4){
+  k = K[j]
+  for(i in 1:10){
+    test_index = flds[[i]]
+    testX = train$x[test_index,]
+    trainX = train$x[-test_index,]
+    
+    trainY = train$y[-test_index]
+    testY = train$y[test_index]
+    
+    knn.pred = knn(trainX,testX,trainY,k=k)
+    cv_error[i,j] = mean(testY!=knn.pred)
+  }
+}
+
+#mean of the columns 
+#apply(cv_error,2,mean)
+bestKIndex = which.min(apply(cv_error,2,mean))
+
+knn.pred = knn(train$x,test$x,train$y,k=K[bestKIndex])
+#mean(test$y!=knn.pred)
+
+table(knn.pred,test$y)
+
+```
+
+## 1b 
+LDA 
+```{r}
+lda.fit = lda(train$y~train$x)
+
+
+```
+Some of the limitations of LDA are if there is substantial separation between the classes, if it is hight dimensional data (p>n), with irregular decision boundaries, or if there are more than 2 categories. I would guess that this error is because there are more than 2 categories.  
+
+
+## 1c 
+KNN has advantages for classification because there are no assumptions as it is completely data driven. It also works well with irregular decision boundaries and when there are more than 2 classification types. So KNN works well for this dataset where Y can be 0,1,...,9  
+
+
+
+
+# Problem 2: Fashion MNIST
+## 2a 
+The plots produce pictures of clothing items: ankle boot, t-shirt, t-shirt, dress, t-shirt.  
+```{r}
+#head(fashion_train$y)
+
+#dim(fashion_train$x)
+par(mfrow = c(2, 3))
+# each observations represents a 28 x 28 pixel image (we treat it as 784 dimensional observation)
+show_digit(fashion_train$x[1,])
+show_digit(fashion_train$x[2,])
+show_digit(fashion_train$x[3,])
+show_digit(fashion_train$x[4,])
+show_digit(fashion_train$x[5,])
+##fashion_train$y[1]
+##fashion_train$y[2]
+##fashion_train$y[3]
+##fashion_train$y[4]
+##fashion_train$y[5]
+
+```
+## 2b 
+optimal k is 7  
+misclassification rate: 0.26    
+confusion matrix:  
+```{r}
+# choosing 3000 observations for training and 100 for test 
+index.train = sample(1:dim(fashion_train$x)[1], 3000, replace=FALSE)
+fashion_train$x=fashion_train$x[index.train,]
+fashion_train$y=fashion_train$y[index.train]
+index.test = sample(1:dim(fashion_test$x)[1], 100, replace=FALSE)
+fashion_test$x=fashion_test$x[index.test,]
+fashion_test$y=fashion_test$y[index.test]
+
+flds <- createFolds(fashion_train$y, k = 10, list = TRUE, returnTrain = FALSE)
+#names(flds)
+
+K= c(1,5,7,9) # nearest neighbor values
+
+cv_error = matrix(NA, 10, 4)
+
+for(j in 1:4){
+  k = K[j]
+  for(i in 1:10){
+    test_index = flds[[i]]
+    testX = fashion_train$x[test_index,]
+    trainX = fashion_train$x[-test_index,]
+    
+    trainY = fashion_train$y[-test_index]
+    testY = fashion_train$y[test_index]
+    
+    knn.pred = knn(trainX,testX,trainY,k=k)
+    cv_error[i,j] = mean(testY!=knn.pred)
+  }
+}
+
+#mean of the columns 
+#apply(cv_error,2,mean)
+bestKIndex = which.min(apply(cv_error,2,mean))
+
+knn.pred = knn(fashion_train$x,fashion_test$x,fashion_train$y,k=K[bestKIndex])
+#mean(fashion_test$y!=knn.pred)
+
+table(knn.pred,fashion_test$y)
+
+```
+The confusion matrix looks similar. The misclassification rate is worse, but still low.  
+
+
+# Problem 3: Concept Review 
+## 3a 
+When the data is high dimensional (p>n), the data points are further apart which makes distance not as meaningful. The whole point of KNN is to find the closest points and assume that this point is similar to them, but if the points are all far away, this assumption breaks down.  
+
+## 3b 
+i) LDA, you can assume that height and weight will have a normal distribution and p is slightly larger relative to n 
+ii) logistic regression would work better because p is smaller relative to n  
+iii) KNN works really well if the decision boundary is irregular or non-linear.  
+
+
+# Problem 4: k-NN
+## 4a 
+The 1 closest observation is 2 which is a 1, so y would be classified as a 1.  
+
+## 4b 
+The 3 closest observations are 2, 4, and 1 which are 1, 0, and 0 respectively so y would be classified as a 0.  
+
+## 4c 
+As k increases, the model becomes less flexible-meaning the bias increases and the variance decreases. With k=1, the model will be super flexible with low bias and high variance because the model would be very close to the truth but would change greatly with differing training sets. Since it only looks at the first nearest neighbor, it is highly vulnerable to change or variance. The opposite is true for a large k. Looking at a large number of neighbors will make it robust to variance. 
+
+
+# Problem 5: Email Spam Part 2
+## 5a 
+It would be worse to label an email as spam when it wasn't than to label an email as not spam when it was spam, so false positive. 
+```{r, results = 'hide', warning=FALSE}
+spam = read.csv("/Users/jillianeglandschool/Desktop/DS303/spambase.data",header=FALSE)
+set.seed(10)
+n = dim(spam)[1]
+train_index = sample(1:n,n/2,replace=F)
+train_spam = spam[train_index,]
+test_spam = spam[-train_index,] 
+
+
+# roughly the same proportions 
+table(train_spam$V58)/dim(train_spam)[1]
+
+
+
+
+glm.fit = glm(V58~., data=train_spam, family='binomial')
+glm.prob = predict(glm.fit,test_spam,type='response') 
+
+
+```
+
+## 5b 
+ROC curve:  
+```{r}
+ROCRpred <- prediction(glm.prob,test_spam$V58)
+plot(performance(ROCRpred,'tpr','fpr'),colorize=TRUE,
+     print.cutoffs.at=seq(0,1,by=0.1), tzext.adj=c(-0.2,1.7))
+
+perf = performance(ROCRpred,'tpr','fpr')
+
+thresholds = data.frame(threshold = perf@alpha.values[[1]],fpr = perf@x.values[[1]], tpr = perf@y.values[[1]])
+
+fpr0.03 = subset(thresholds,fpr<0.03)
+
+## obtain area under the curve, evaluates overall performance of a classifier
+## this can be useful if you are comparing multiple classifiers
+
+#auc_ROCR <- performance(ROCRpred, measure = "auc")
+#auc_ROCR@y.values[[1]] 
+
+```
+
+
+## 5c 
+false positive rate at .5: .0455  
+false negative rate at .5: .1141  
+confusion matrix: 
+```{r}
+glm.pred = rep('0',nrow(test_spam))
+glm.pred[glm.prob >0.5] ='1'
+table(glm.pred,test_spam$V58)
+
+#1-mean(glm.pred == test_spam$V58)
+
+#rows are predicted, # columns are true 
+
+# false positive rate: FP/(FP+TN) = 64/(64+1343) = .0455  
+# false negative rate: FN/(FN+TP) = 102/(102+792) = .1141  
+
+
+```
+
+## 5d 
+choose a threshold of 0.6722220 This will result in a false positive rate of 0.02985075
+```{r, results='hide'}
+tail(fpr0.03)
+
+```
+
+## 5e 
+LDA 
+```{r}
+lda.fit = lda(V58~.,data=train_spam)
+lda.pred = predict(lda.fit,newdata=test_spam, type='class')$posterior[,"1"]
+
+######error here####### 
+ROCRpred <- prediction(lda.pred,test_spam$V58)
+plot(performance(ROCRpred,'tpr','fpr'),colorize=TRUE,
+     print.cutoffs.at=seq(0,1,by=0.1), tzext.adj=c(-0.2,1.7))
+
+perf = performance(ROCRpred,'tpr','fpr')
+
+thresholds = data.frame(threshold = perf@alpha.values[[1]],fpr = perf@x.values[[1]], tpr = perf@y.values[[1]])
+
+fpr0.03 = subset(thresholds,fpr<0.03)
+
+```
+
+false positive rate at .5: .0426  
+false negative rate at .5: .2260  
+confusion matrix: 
+```{r}
+lda.pred = predict(lda.fit,newdata=test_spam, type='class')
+table(lda.pred$class,test_spam$V58)
+
+# false positive rate: FP/(FP+TN) = 60/(60+1347) = .0426  
+# false negative rate: FN/(FN+TP) = 202/(202+692) = .2260   
+
+```
+
+choose a threshold of 0.6615166 This will result in a false positive rate of 0.02914001
+```{r, results='hide'}
+tail(fpr0.03)
+
+```
+
+
+
+## 5f 
+QDA:  
+false positive rate at .5: .2331  
+false negative rate at .5: .0481  
+confusion matrix:  
+```{r}
+qda.fit = qda(V58~.,data=train_spam)
+qda.pred = predict(qda.fit,test_spam)
+
+table(qda.pred$class,test_spam$V58)
+#mean(qda.pred$class!=test_spam$V58)
+
+# false positive rate: FP/(FP+TN) = 328/(328+1079) = .2331 
+# false negative rate: FN/(FN+TP) = 43/(43+851) = .0481 
+
+```
+
+
+Naive Bayes:  
+false positive rate at .5: .4229  
+false negative rate at .5: .0492  
+confusion matrix: 
+```{r}
+nb.fit = naiveBayes(V58~., data=train_spam)
+nb.class = predict(nb.fit, test_spam)
+table(nb.class, test_spam$V58)
+#mean(nb.class == test_spam$V58) 
+
+# false positive rate: FP/(FP+TN) = 595/(595+812) = .4229 
+# false negative rate: FN/(FN+TP) = 44/(44+850) = .0492   
+
+```
+
+
+KNN:  
+false positive rate at .5: .1720  
+false negative rate at .5: .2752  
+confusion matrix: 
+```{r}
+standardized.X2 = scale(train_spam[,-58]) #train x
+train.X = train_spam[,-58] 
+train.Y = train_spam$V58 
+test.X = test_spam[,-58]
+test.Y = test_spam$V58 
+
+
+flds <- createFolds(train_spam$V58, k = 10, list = TRUE, returnTrain = FALSE)
+
+K= c(1,3,5,7) # nearest neighbor values
+
+cv_error = matrix(NA, 10, 4)
+
+for(j in 1:4){
+  k = K[j]
+  for(i in 1:10){
+    test_index = flds[[i]]
+    testX = standardized.X2[test_index,]
+    trainX = standardized.X2[-test_index,]
+    
+    trainY = train_spam$V58[-test_index]
+    testY = train_spam$V58[test_index]
+    
+    knn.pred = knn(trainX,testX,trainY,k=k)
+    cv_error[i,j] = mean(testY!=knn.pred)
+  }
+}
+
+
+bestKIndex = which.min(apply(cv_error,2,mean))
+
+knn.pred = knn(train.X,test.X,train.Y,k=K[bestKIndex])
+#mean(test.Y!=knn.pred)
+
+table(knn.pred,test.Y)
+
+# false positive rate: FP/(FP+TN) = 242/(242+1165) = .1720  
+# false negative rate: FN/(FN+TP) = 246/(246+648) = .2752    
+
+
+```
+
+
+
+## 5g 
+Since we are focused on minimizing false positive rates, I would choose LDA since it has the lowest false positive rate at .0426  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

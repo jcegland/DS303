@@ -1,0 +1,328 @@
+---
+title: "HW10"
+author: "Jillian Egland"
+date: "2023-11-11"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+```{r, message=FALSE}
+library(randomForest)
+library(ISLR2)
+library(tree)
+library(kableExtra)
+library(caret)
+
+```
+
+# Problem 1: Conceptual Review
+## 1a 
+under the majority vote approach:  
+6 are classified as red, 4 as green, so it would be classified as red.  
+under the average probability approach:  
+the average probability is 4.5/10=.45 so it would be classified as green  
+
+## 1b 
+![](IMG_1215.jpg){width=50%}
+
+## 1c 
+![](IMG_1217.jpg){width=50%}
+
+## 1d 
+No, it will always result in a lower variance, but sometimes the reduction in variance is only a small one. Using bagging, we average the trees which reduces the variance. the variance of the average  of independent variables is σ^2/n, but if they are uncorrelated, the variance of their average is 1/4(var(Z1) + var(Z2) + 2Cov(Z1, Z2)). If the variables are very correlated, this correlation will decrease the amount of reduction in variance.  
+
+
+# Problem 2: Basics of Decision Trees 
+
+```{r}
+set.seed(2)
+n = dim(OJ)[1]
+train_index = sample(1:n,800,replace=F)
+train = OJ[train_index,]
+test = OJ[-train_index,] 
+
+
+```
+
+## 2b 
+training error: 127/800  
+9 terminal nodes  
+```{r}
+tree.oj = tree(Purchase~.,data=train)
+summary(tree.oj)
+
+```
+ 
+
+
+## 2c 
+terminal node: 25) PriceDiff > -0.35 81  103.10 CH ( 0.66667 0.33333 ) * 
+When LoyalCH is >0.5036 and <0.738 and PriceDiff is <0.265 and >-0.35, the predicted response is CH.   
+```{r}
+tree.oj
+```
+
+## 2d 
+This tree only used LoyalCH, Store, PriceDiff, SpecialCH, and WeekofPurchase as spliting points, so it has deemed those most important. Since LoyalCH is the first split, it had the largest reduction in MSE.  
+```{r}
+plot(tree.oj)
+text(tree.oj,pretty=0)
+
+```
+
+## 2e 
+confusion matrix and misclassification rate:  
+```{r}
+tree.pred = predict(tree.oj, newdata=test, type='class')
+
+table(tree.pred,test$Purchase)
+mean(tree.pred!=test$Purchase)
+
+
+```
+
+## 2f 
+
+```{r}
+cv.oj = cv.tree(tree.oj) #performs CV in on order to the determine the optimal level of tree complexity. 
+
+plot(cv.oj$size, cv.oj$dev, type='b')
+
+
+```
+
+## 2g 
+tree size corresponding to the lowest cross-validated classification error rate:  
+```{r}
+cv.oj$size[which.min(cv.oj$dev)]
+
+```
+
+## 2h 
+pruned tree of best size:  
+```{r}
+prune.oj= prune.tree(tree.oj,best=cv.oj$size[which.min(cv.oj$dev)]) #best represents the size of a specific subtree in the cost-complexity sequence to be returned
+
+plot(prune.oj)
+text(prune.oj,pretty=0)
+
+
+```
+
+## 2i 
+the training misclassification rate is larger for the pruned tree. This is what I would expect as the original tree would be very overfit to the training data, so pruning it would increase the training error. 
+```{r}
+## original tree 
+summary(tree.oj)$misclass ## train 
+
+## pruned tree 
+summary(prune.oj)$misclass
+
+```
+
+## 2j 
+The misclassification rates for both the pruned and unpruned trees are extremely similar. I would have expected the pruned tree to do better since it was less overfit. 
+```{r}
+## original tree 
+mean(tree.pred!=test$Purchase) # test 
+
+
+## pruned tree 
+prune.pred = predict(prune.oj,newdata=test, type='class')
+mean(prune.pred != test$Purchase)
+
+
+
+```
+
+
+# Problem 3: Bagging and Random Forests
+
+```{r}
+Carseats$High <- factor(ifelse(Carseats$Sales <=8, "No", "Yes"))
+Carseats1 = Carseats[,-1]
+train_index <- sample(1:nrow(Carseats1), 200)
+
+train = Carseats1[train_index, ]
+test = Carseats1[-train_index, ]
+
+
+```
+
+## 3b 
+This tree only used 8 variables out of 11. Advertising was the first split, and therefore the most important in lowering MSE, and Price was the second.  
+Training MSE: 27/200 = 0.145  
+Test MSE: .325
+```{r, results='hide'}
+tree.car = tree(High~., data=train, split='gini')
+summary(tree.car)$misclass
+
+tree.pred = predict(tree.car, newdata=test, type='class')
+mean(tree.pred!=test$High)
+
+summary(tree.car)
+```
+```{r}
+plot(tree.car)
+text(tree.car,pretty=0)
+
+```
+
+## 3c 
+optimal tree size:   
+```{r}
+cv.car = cv.tree(tree.car)
+#cv.car
+cv.car$size[which.min(cv.car$dev)]
+```
+test MSE for pruned tree: 
+```{r}
+prune.car= prune.tree(tree.car,best=cv.car$size[which.min(cv.car$dev)])
+pred.car = predict(prune.car, newdata=test, type='class')
+mean(pred.car!=test$High)
+
+```
+
+## 3d 
+test MSE: 0.205 
+```{r, results='hide'}
+bag.car = randomForest(High~.,data=train, mtry = dim(Carseats1)[2]-1, importance = TRUE, ntree=500)
+#bag.car
+
+yhat.bag =  predict(bag.car, newdata = test, type='class') 
+mean(yhat.bag != test$High)
+```
+```{r}
+importance(bag.car)
+```
+
+## 3e 
+```{r}
+m_list = c(1:10)
+error_list = rep(NA, 10)
+for (m in m_list){
+  rf.car = randomForest(High ~., data = train, mtry = m, importance = TRUE, ntree = 500)
+  
+  yhat.rf = predict(rf.car, newdata = test, type='class') 
+  error_list[m] = mean(yhat.rf != test$High) 
+  
+  
+}
+
+#plot(m_list, error_list)
+output = data.frame(cbind(m_list, error_list))
+kable(output, format = "html") %>% kable_styling()
+
+
+```
+
+## 3f 
+No, we cannot choose the one that produces the lowest test MSE. This is a form of double dipping as we just pick the model that does the best for the data given. It doesn't say anything about how well it performs on new data. 
+
+## 3g 
+I implemented 10 fold validation to test 10 different values of m. This method chose m=5 as the best value for m.  
+```{r, results='hide'}
+flds <- createFolds(train$High, k = 10, list = TRUE, returnTrain = FALSE)
+
+
+M= c(1:10) # nearest neighbor values
+
+cv_error = matrix(NA, 10, 10)
+
+for(j in 1:10){
+  m = M[j]
+  for(i in 1:10){
+    test_index = flds[[i]]
+    
+    train.cv = train[-test_index,]
+    test.cv = train[test_index,]
+    
+    rf.car = randomForest(High ~., data = train.cv, mtry = m, importance = TRUE, ntree = 500)
+    
+    yhat.rf = predict(rf.car, newdata = test.cv, type='class') 
+    #error_list[m] = mean(yhat.rf != test$High) 
+    
+    
+    cv_error[i,j] = mean(test.cv$High!=yhat.rf)
+  }
+}
+
+#mean of the columns 
+#apply(cv_error,2,mean)
+bestMIndex = which.min(apply(cv_error,2,mean))
+
+M[bestMIndex]
+
+```
+
+## 3h 
+i) The 4th observation appears in 300 trees  
+```{r}
+set.seed(1)
+rf.car = randomForest(High ~., data = Carseats1, mtry = 6, importance = TRUE, ntree = 500, keep.inbag=TRUE)
+
+table(rf.car$inbag[4,]!=0)
+
+
+```
+
+
+
+iii) 
+```{r, echo=TRUE} 
+
+allpred = predict(rf.car,newdata=Carseats1,predict.all=TRUE)$individual
+
+n = dim(Carseats1)[1]
+
+yhat = rep(NA,n)
+for(i in 1:n){
+  pred =  (allpred[i,rf.car$inbag[i,]==0]) # pred where obs i is oob 
+  sum_yes = length(pred[pred=="Yes"]) # majority vote 
+  sum_no = length(pred[pred=="No"])
+  #yhat[i] = sum_yes > n/2  ## OOB prediction
+  yhat[i] = 'No' 
+  if (sum_yes > sum_no){
+    yhat[i] = 'Yes'
+  }
+  
+}
+
+mean((yhat != Carseats1$High)^2)
+
+#OOB error for when you have 500 trees 
+#rf.car$mse[500]
+
+
+
+```
+
+
+
+ii)  
+prediction for observation 10:  
+```{r}
+yhat[10]
+
+pred =  (allpred[10,rf.car$inbag[10,]==0]) # pred where obs i is oob 
+sum_yes = length(pred[pred=="Yes"]) # majority vote  
+sum_no = length(pred[pred=="No"])
+```
+proportion of yeses and no's 
+```{r} 
+sum_yes/length(pred)
+sum_no/length(pred)
+
+```
+
+
+
+
+
+
+
+
+
+
