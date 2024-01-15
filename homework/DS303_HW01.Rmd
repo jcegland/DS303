@@ -2,20 +2,30 @@
 title: "HW01"
 author: "Jillian"
 date: "2023-08-23"
-output: html_document
+output:
+  html_document: 
+    toc: true
+    theme: united
+
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
 
+```{r}
+library(ggplot2)
+library(reshape2)
+```
 
 # Problem 1 Bias Variance Decomposition  
-## 1a  
+## 1a sketch
+*Provide a sketch of typical (squared) bias, variance, expected test MSE, training MSE, and the irreducible error curves on a single plot, as we go from less flexible statistical learning methods towards more flexible methods. The x-axis should represent the amount of flexibility in the method, and the y-axis should represent the values for each curve. There should be 5 curves. Make sure to label each one.*  
 
-![sketched plot](IMG_0805.jpg){width=50%}
+![](IMG_0805.jpg){width=50%}
 
 
-## 1b  
+## 1b definitions
+*Define in plain language (so that a non-data scientist can understand) what the quantities expected test MSE, training MSE, bias, variance and irreducible error mean.*  
 
     i. Expected test MSE: the true test MSE of a model trained with infinite training sets  
     ii. Training MSE: the error in the model compared to your training dataset.  
@@ -25,9 +35,17 @@ knitr::opts_chunk$set(echo = FALSE)
     iv. Variance: how much the model would change if the data used to train it changed  
     v. Irreducible error: the inherent error in the data as the model will not be 
        perfect due to natural variance  
+MSE: mean squared error, measures average (squared) difference between what we observe and what we predict.  
+Training MSE: computed from training data, evaluates discrepancy between observed response and predicted value in the training set.  
+Expected Test MSE: "true average test MSE" would obtain if we could repeatedly estimate f using a large number of training sets and evaluate each of them at x0. decomposed into bias, variance, and irreducible error.  
+Bias: error that is introduced by approximating our real life phenomenon.  
+Variance: amount by which our model would change if we estimated it using a different training set.  
+Irreductible error: the inherent noise and randomness observed in Y, cannot reduce this error no matter how well we estimate our model.  
 
 
-## 1c 
+## 1c shapes of graph
+*Explain why each of the five curves has the shape displayed in part (a).*  
+
     i.	Bias squared: decreases and flattens out as the model becomes more and 
       more complex because the model is reducing the reducible error. 
     ii.	Variance: variance increases with complexity because the model is overfitted, 
@@ -39,7 +57,11 @@ knitr::opts_chunk$set(echo = FALSE)
     v.	Irreducible error: constant value, very small, cannot be reduced 
 
 
-## 1d 
+
+
+## 1d why use more/less flexible model? 
+*What are the advantages and disadvantages of a very flexible (versus a less flexible) approach for supervised learning? Under what circumstances might a more flexible approach be preferred to a less flexible approach? When might a less flexible approach be preferred?*  
+
 More flexible models will have higher variance and lower bias, while less flexible models will have higher bias  
 and lower variance. A more flexible model is not always the best solution because that could lead to overfitting,  
 which means that the model is perfectly trained to the training data and will not be able to accurately predict  
@@ -48,23 +70,39 @@ For example, if the data follows a linear pattern, using a more flexible model w
 be a good future predictor. If the model follows a more curved pattern, using the simplest of models,  
 the constant model, will not allow for any flexibility and will not be a good predictor.  
 
-
-
-## 1e 
-If the true model is linear, a cubic regression would lead to a higher training MSE than a linear regression would.  
-The more flexible model would overfit the data since only a linear model is needed.   
-
-
-## 1f 
-The test MSE for a cubic model would be lower than the test MSE for a linear model. Since the cubic model would be  
-overfit for the true linear data, it wouldn't be a good model to predict new data, resulting in a low test MSE.  
-Since the true model is linear, the linear regression would have a higher test MSE.  
+Advantages: very flexible models have low bias, so can handle highly lon-linear relationships beween Y and predictors. If true model is highly non-linear, this setting could benefit from a very complex model.  
+disadvantages: very flexible models lead to overfittings, they could be subject to high variance. This is especially pronounced if the true model is not very complex. A very flexible model may start to model the random noise. We want to use a less flexible model if we think that the relationship between Y and predictors is relatively simple. Less flexible model also preferred for a small dataset.  
 
 
 
-# Problem 2 Interpreting MLR  
-## 2a  
-ii. for a fixed value of IQ and GPA, college graduates earn more, on average than high school students is correct.  
+## 1e training MSE
+*I collect a data set of (n = 100 observations) containing a single predictor and a quantitative response Y . I fit a linear regression model to the data, as well as a separate cubic regression, i.e. Y = β0 + β1 + β2X2 + β3X3 + ε. Suppose that the true relationship between X and Y is linear. Consider the training MSE for the linear regression and also the training MSE for the cubic regression. Would we expect one to be lower than other, or is there not enough information to tell? Justify your answer.*  
+
+If the true model is linear, a cubic regression would lead to a lower training MSE than a linear regression would.  
+The more flexible model would overfit the data since only a linear model is needed.  
+
+
+## 1f test MSE 
+*Answer (e) using test MSE instead of training MSE.*  
+
+The test MSE for a cubic model would be higher than the test MSE for a linear model. Since the cubic model would be overfit for the true linear data, it wouldn't be a good model to predict new data, resulting in a high test MSE.  
+Since the true model is linear, the linear regression would have a lower test MSE.  
+
+
+
+# Problem 2 Interpreting MLR (Multiple Linear Regression)
+*Suppose we have a data set with five predictors, X1 = GPA, X2 = IQ, and X3 = Level (1 for College and 0 for High School). The response is starting salary after graduation (in thousands of dollars). Suppose we use least squares to fit a multiple linear regression model on our data set and get βˆ0 =50, βˆ1 =20, βˆ2 =0.07 and βˆ3 =35.*  
+## 2a beta hat 
+*Which answer is correct, and why?*  
+
+i. For a fixed value of IQ and GPA, high school graduates earn more, on average, than college graduates.  
+ii. For a fixed value of IQ and GPA, college graduates earn more, on average, than high school graduates.  
+iii. For a fixed value of IQ and GPA, high school graduates earn more, on average, than college graduates provided that the GPA is high enough.  
+iv. For a fixed value of IQ and GPA, college graduates earn more, on average, than high school graduates provided that the GPA is high enough.  
+
+
+ii. is correct  
+If IQ and GPA are fixed, the average salary E(Y) is higher for college graduates than high school graduates (B3hat=35 is positive)  
 The coefficient represents the average change in Y associated with 1 unit change in X,  
 holding all other predictors constant. Since X3 is categorical, an input of 1 associated with the college level  
 will increase the predicted salary by 35 from a high school level salary with the same GPA and IQ.  
@@ -74,6 +112,8 @@ between high school and college level.
 
 
 ## 2b  
+*Predict the salary of a college graduate with IQ of 110 and a GPA of 4.0.*  
+
 A college graduate with an IQ of 110 and a GPA of 4.0 will have a predicted salary of $172,700.  
 
 ```{r, results = 'hide'} 
@@ -87,10 +127,15 @@ salary_model <- function(gpa, iq, level){
 
 
 ## 2c  
+*True or false: Since the coefficient of IQ is very small, the effect of IQ effect on salary is not very important. Justify your answer.*  
+
+
 False, even though the coefficient of IQ is small, it will still have a significant impact in the model.  
-For example, with a fixed GPA of 4.0 and level of High School and  
+For example, with a fixed GPA of 4.0 and level of High School and:  
 an IQ of 80 will have a predicted salary of $135,600, and  
-an IQ of 90 will have a predicted salary of $136,300, which is a difference of $700. 
+an IQ of 90 will have a predicted salary of $136,300, which is a difference of $700.  
+
+False, the magnitude of the coefficient does not determine its importance. The magnitude is only affected by the scale of the predictor.  
 
 ```{r, results = 'hide'} 
 # 4.0 gpa, 80 iq, high school level 
@@ -103,13 +148,15 @@ an IQ of 90 will have a predicted salary of $136,300, which is a difference of $
 
 
 # Problem 3 Multiple Linear Regression  
-
+*We will now try to predict per capita crime rate using the other variables in this data set. In other words, per capita crime rate is the response, and the other variables are the predictors.*  
 ```{r, results = 'hide'} 
 library(ISLR2)
 head(Boston)
 
 ```
 # 3a 
+*How many rows (n) are in the data set? How many variables are in the data set? What does the variable lstat represent?*  
+
 506 rows and 13 variables in Boston dataset.  
 lstat is percent of the population that is lower status.  
 
@@ -120,6 +167,8 @@ lstat is percent of the population that is lower status.
 
 
 # 3b 
+*Obtain the average per capita crime rate across all suburbs in the data set. Report that here.*  
+
 the average per capita crime rate across all suburbs is 3.613524 
 
 
@@ -129,11 +178,12 @@ mean(Boston$crim)
 ```
 
 # 3c 
+*Obtain the average crime rate only for those suburbs who are not near the Charles river (chas ==0) and those suburbs who are near the Charles river (chas ==1). Report both values here. Is it safer to be near or away from the Charles river?*  
+
 The average per capita crime rate for the suburbs not near the Charles river is 3.744447  
 The average per capita crime rate for the suburbs near the Charles river is 1.85167  
 
 So it is safer to be near the river.  
-
 
 ```{r, results = 'hide'} 
 away_river = Boston[Boston$chas==0, ]
@@ -146,6 +196,8 @@ mean(near_river$crim)
 
 
 ## 3d 
+*Do any of the suburbs of Boston appear to have particularly high crime rates? Define what a ‘high’ crime rate is and provide some summary statistics on the crime rate.*  
+
 Yes, there are suburbs with particularly high crime rates. I defined particularly high as outside 95% of the data, or outside 2 standard deviations of the mean. There are 16 suburbs that fit the definition. 
 
 ```{r, message=FALSE, include=FALSE} 
@@ -180,24 +232,15 @@ nrow(high_rates)
 
 ```
 
-
-
-
-
-
 ## 3e  
+*Are any of the other predictors in the data set associated with per capita crime rate? Use your exploratory data analysis skills to uncover insights. Describe your findings.*  
+
 These scatterplots show the relationship between the explanatory variables and the crime rate.  
 The correlation matrix shows the r squared values between each of the variables to check for correlation.  
 Since we are only interested in correlation to the crime rate, we can look at the first row (or column).  
 The most correlated are rad (.63), tax (.58), and lstat (.46).  
 However, looking at the scatterplots, rad and tax don't seem to have a good correlation.  
 From the scatterplots, I see the most correlation in lstat, rm, and possibly nox and medv.  
-
-
-```{r, message=FALSE, include=FALSE} 
-library(ggplot2)
-library(reshape2)
-```
 
 ```{r}
 #pairs(Boston, main = "Scatter Plot Matrix for Boston Crime")
@@ -211,6 +254,8 @@ round(cor(Boston),2)
 
 
 ## 3f  
+*Fit a simple linear regression model with crim as the response and lstat as the predictor. Describe your results. What are the estimated coefficients from this model? Report them here. (a simple linear regression is just a regression model with a single predictor)*  
+
 predicted y = -3.33 + 0.55(lstat)  
 
 Residual standard error: 7.664  
@@ -240,11 +285,15 @@ lm(crim~lstat,data=Boston) %>% tidy() %>% kable() %>% kable_styling() %>% kableE
 ```
 
 
-## 3g  
+## 3g 
+*Explain in words how we fit a model. In other words, what approach did we use to obtain the estimated regression coefficients from this model? Is this approach reasonable?*  
+
 In order to fit a model, we want create a model that minimizes the squared residuals. This model will have the minimum amount of error and be the closest to the data. To find this, take the derivative of the sum of the squared differences between true y and predicted y, set the derivative equal to 0, and solve to find the optimization. This approach is reasonable because it finds the optimized values for the model instead of guessing.  
 
 
 ## 3h  
+*Repeat part (f) for each predictor in the dataset. That means for each predictor, fit a simple linear regression model to predict the response. Describe your results and organize them in a table. In which of the models is there a statistically significant association between the predictor and the response? Create some plots to back up your assertions.*  
+
 Show below are the results for the linear models for each predictor. Most of the models show statistical significance except for chas. This is confirmed by the pairwise plots and the correlation matrix in part 3e above that show some relation between the predictors and the response.  
 
 
@@ -281,6 +330,7 @@ results %>% kable() %>% kable_styling()
 ```
 
 ## 3i 
+*Fit a multiple regression model to predict the response using all of the predictors. Summarize your results neatly in a table.*  
 
 ```{r} 
 model_all = lm(crim~., data=Boston)
@@ -292,8 +342,11 @@ summary(model_all)$coefficients %>% kable() %>% kable_styling() %>% kableExtra::
 ```
 
 ## 3j  
-The p-values for the multiple regression model were much higher, meaning the model was not as statistically significant. The scatter plot below shows the multiple regression points in red and the simple regression points in blue. For every single variable, the p-value was higher in the multiple regression model. However you can see more variance between the variables, allowing us to see which has more statistical significance in the model. This will let us adjust our model to make it more accurate.  
+*How do your results from (h) compare to your results from (i)? Create a plot comparing the simple linear regression coefficients from (h) to the multiple regression coefficients from (i). Describe what you observe. How does this provide evidence that using many simple linear regression models is not sufficient compared to a multiple linear regression model?*  
 
+**Wrong, compare coefficents, not p-values** 
+
+The p-values for the multiple regression model were much higher, meaning the model was not as statistically significant. The scatter plot below shows the multiple regression points in red and the simple regression points in blue. For every single variable, the p-value was higher in the multiple regression model. However you can see more variance between the variables, allowing us to see which has more statistical significance in the model. This will let us adjust our model to make it more accurate.  
 
 
 ```{r}
@@ -307,9 +360,10 @@ points(x=simple_ps, col="blue")
 
 
 ## 3k 
+*First set.seed(1) to ensure we all get the same values. Then, split the Boston data set into a training set and test set. On the training set, fit a multiple linear regression model to predict the response using all of the predictors. Report the training MSE and test MSE you obtain from this model.*  
+
 train MSE: 42.49345  
 test MSE: 41.19923  
-
 
 ```{r, results='hide'}
 set.seed(1) 
@@ -333,6 +387,8 @@ m1ts
 
 
 ## 3l  
+*On the training set you created in part (k), fit a multiple linear regression model to predict the response using only the predictors zn, indux, nox, dis, rad, ptratio, medv. Report the training MSE and test MSE you obtain from this model. How do they compare to your results in part (k)?*  
+
 train MSE: 43.97466  
 test MSE: 39.62763  
 The training MSE increased from the model with all the variables, and the test MSE decreased.  
@@ -353,6 +409,8 @@ m1ts
 
 
 ## 3m  
+*Are these results in part (l) surprising or what you expected? Explain.*  
+
 These results did not surpise me. I thought that with a simpler model only including more statistically significant variables would make the model better. The training MSE went up, which is okay since we really want the model to be better at predicting new variables (test MSE), which it does. 
 
 

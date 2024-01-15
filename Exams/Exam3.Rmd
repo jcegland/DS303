@@ -1,0 +1,151 @@
+---
+title: "Exam 3"
+author: "Jillian"
+date: "2023-11-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r}
+## imports 
+library(caret)
+library(randomForest)
+```
+
+
+# Part 2: Random Forest 
+
+```{r}
+heart = read.table('https://hastie.su.domains/ElemStatLearn/datasets/SAheart.data', sep=",",head=T,row.names=1)
+heart$chd = as.factor(heart$chd)
+
+test_heart = heart[1:100,]
+train_heart = heart[101:462, ]
+
+```
+
+
+## 2a 
+5-fold cv error for each value of m: 
+```{r}
+set.seed(1) 
+flds <- createFolds(train_heart$chd, k = 5, list = TRUE, returnTrain = FALSE)
+m_values = c(2,3,4,5) 
+
+output = matrix(NA, 5, 4) #columns are m values, rows for each fold 
+for (j in 1:4){
+    m = m_values[j]
+  
+  for (i in 1:5){
+    test_index = flds[[i]]
+    
+    test = train_heart[test_index,]
+    train = train_heart[-test_index,]
+    
+    
+    rf.heart = randomForest(chd ~., data = train, mtry = m, importance = TRUE, ntree = 500)
+    
+    yhat.rf = predict(rf.heart, newdata = test) 
+    test_mse = mean((yhat.rf != test$chd))
+    
+    output[i,j] = test_mse
+  }
+}
+
+# cv error 
+apply(output,2,mean)
+
+# best m value 
+best_m = m_values[which.min(apply(output,2,mean))]
+
+
+#rf.heart = randomForest(chd ~., data = train, mtry = 6, importance = TRUE, ntree = 500)
+
+
+
+```
+
+
+## 2b 
+misclassification rate: 
+```{r}
+rf.heart = randomForest(chd ~., data = train, mtry = best_m, importance = TRUE, ntree = 500)
+yhat.rf = predict(rf.heart, newdata = test) 
+mean((yhat.rf != test$chd))
+
+
+```
+
+## 2c 
+OOB error: 
+```{r}
+rf.heart = randomForest(chd ~., data = heart, mtry = best_m, importance = TRUE, ntree = 500, keep.inbag=TRUE)
+
+
+## how many times did the first observation NOT show up in a tree?
+#rf.heart$inbag[1,]
+#table(rf.heart$inbag[1,]==0)
+
+allpred = predict(rf.heart,newdata=heart,predict.all=TRUE)$individual
+
+n = dim(heart)[1]
+
+yhat = rep(NA,n)
+for(i in 1:n){
+  pred =  (allpred[i,rf.heart$inbag[i,]==0]) # pred where obs i is oob 
+  sum_yes = length(pred[pred=="1"]) # majority vote 
+  sum_no = length(pred[pred=="0"])
+  #yhat[i] = sum_yes > n/2  ## OOB prediction
+  yhat[i] = '0' 
+  if (sum_yes > sum_no){
+    yhat[i] = '1'
+  }
+  
+}
+
+mean((yhat != heart$chd)^2)
+
+
+
+
+
+```
+
+## 2d
+probability that Y=1 for the 2nd observation: 
+```{r}
+predict(rf.heart,newdata=heart,predict.all=TRUE, type="prob")$aggregate[2,2]
+
+
+```
+
+## 2e 
+bootstrapped standard error: 
+```{r}
+n = dim(heart)[1]
+B = 1000
+se = rep(0,B)
+for(b in 1:B){
+  index = sample(1:n,n,replace=TRUE)
+  bootsample = heart[index,]
+  
+  rf.boot = randomForest(chd ~., data = bootsample, mtry = best_m, importance = TRUE, ntree = 25, keep.inbag=TRUE)
+  
+  prob = predict(rf.heart,newdata=bootsample,predict.all=TRUE, type="prob")$aggregate[2,2]
+  
+  se[b] = prob
+}
+sqrt(sum((se-mean(se))^2)/(B-1)) #Standard Error Formula
+
+
+
+
+```
+
+
+
+
+

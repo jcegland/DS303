@@ -19,6 +19,9 @@ library(e1071)
 
 # Problem 1: MNIST handwritten digit database
 ## 1a
+*Randomly select 3000 observations from the training set and randomly select 100 observations from the test set. Implement KNN classification. Report the following:*  
+*Carry out 10-fold cross-validation on the training set to determine the optimal K. Try K = 1,5,7,9. What is the optimal K?*  
+*Use this optimal K to implement KNN classification on the test set. Report your confusion matrix and misclassification error rate on the test set.*  
 
 ```{r sourceCode}
 # use source() function to source the functions we want to execute
@@ -76,6 +79,8 @@ table(knn.pred,test$y)
 ```
 
 ## 1b 
+*Try to implement LDA on the MNIST dataset. What kind of error message do you obtain? Do some digging and explain what this error message means.*  
+
 LDA 
 ```{r}
 lda.fit = lda(train$y~train$x)
@@ -86,6 +91,8 @@ Some of the limitations of LDA are if there is substantial separation between th
 
 
 ## 1c 
+*Discuss how this dataset highlights some of the advantages of using KNN for classification.*  
+
 KNN has advantages for classification because there are no assumptions as it is completely data driven. It also works well with irregular decision boundaries and when there are more than 2 classification types. So KNN works well for this dataset where Y can be 0,1,...,9  
 
 
@@ -93,6 +100,8 @@ KNN has advantages for classification because there are no assumptions as it is 
 
 # Problem 2: Fashion MNIST
 ## 2a 
+*Produce plots of the first 5 observations in the training set. What do you see?*  
+
 The plots produce pictures of clothing items: ankle boot, t-shirt, t-shirt, dress, t-shirt.  
 ```{r}
 #head(fashion_train$y)
@@ -113,6 +122,8 @@ show_digit(fashion_train$x[5,])
 
 ```
 ## 2b 
+*Repeat Problem 1(a) for this dataset. How do your confusion matrices and misclassification error rates compare?*  
+
 optimal k is 7  
 misclassification rate: 0.26    
 confusion matrix:  
@@ -162,27 +173,46 @@ The confusion matrix looks similar. The misclassification rate is worse, but sti
 
 # Problem 3: Concept Review 
 ## 3a 
+*Suppose you just took on a new consulting client. He tells you he has a large dataset (say 100, 000 observations) and he wants to use this to classify whether or not to invest in a stock based on a set of p = 10, 000 predictors. He claims KNN will work really well in this case because it is non-parametric and therefore makes no assumptions on the data. Present an argument to your client on why KNN might fail when p is large relative to the sample size.*  
+
 When the data is high dimensional (p>n), the data points are further apart which makes distance not as meaningful. The whole point of KNN is to find the closest points and assume that this point is similar to them, but if the points are all far away, this assumption breaks down.  
 
 ## 3b 
+*For each of the following classification problems, state whether you would advise a client to use LDA, logistic regression, or KNN and explain why:*  
+*We want to predict gender based on height and weight. The training set consists of heights and weights for 82 men and 63 women.*  
 i) LDA, you can assume that height and weight will have a normal distribution and p is slightly larger relative to n 
+
+*We want to predict gender based on annual income and weekly working hours. The training set consists of 770 mean and 820 women.*  
 ii) logistic regression would work better because p is smaller relative to n  
+
+*We want to predict gender based on a set of predictors where the decision boundary is complicated and highly non-linear. The training set consists of 960 men and 1040 women.*  
 iii) KNN works really well if the decision boundary is irregular or non-linear.  
 
 
 # Problem 4: k-NN
+*Assume our outcome Y can take on Y =0, Y=1, or Y=2 (3 categories). Suppose we have a training data set with 5 observations. We want to classify a test observation using KNN. Below are all the distances between each of the 5 observations in training set and the test observation.*  
+
 ## 4a 
+*Based on the above, how would we classify our test observation using K = 1?*. 
+
 The 1 closest observation is 2 which is a 1, so y would be classified as a 1.  
 
 ## 4b 
+*How would we classify our test observation using K = 3?*  
+
 The 3 closest observations are 2, 4, and 1 which are 1, 0, and 0 respectively so y would be classified as a 0.  
 
 ## 4c 
+*KNN is highly dependent on the choice of K. Discuss the bias/variance tradeoff we make in choosing K.*  
 As k increases, the model becomes less flexible-meaning the bias increases and the variance decreases. With k=1, the model will be super flexible with low bias and high variance because the model would be very close to the truth but would change greatly with differing training sets. Since it only looks at the first nearest neighbor, it is highly vulnerable to change or variance. The opposite is true for a large k. Looking at a large number of neighbors will make it robust to variance. 
 
 
 # Problem 5: Email Spam Part 2
+*Use the Spam data set, from HW 8, for this problem. Repeat your code from Problem 2 parts (a), (b), and (c).*  
+
 ## 5a 
+*What type of mistake do we think is more critical here: reporting a meaningful email as spam (false positive) or a spam email as meaningful (false negative)?*  
+
 It would be worse to label an email as spam when it wasn't than to label an email as not spam when it was spam, so false positive. 
 ```{r, results = 'hide', warning=FALSE}
 spam = read.csv("/Users/jillianeglandschool/Desktop/DS303/spambase.data",header=FALSE)
@@ -206,6 +236,8 @@ glm.prob = predict(glm.fit,test_spam,type='response')
 ```
 
 ## 5b 
+*Fit a logistic regression model here and apply it to the test set. Based on your answer to part (a), plot the ROC curve of true positive rate vs. false positive rate or true negative rate vs. false negative rate.*  
+
 ROC curve:  
 ```{r}
 ROCRpred <- prediction(glm.prob,test_spam$V58)
@@ -228,6 +260,8 @@ fpr0.03 = subset(thresholds,fpr<0.03)
 
 
 ## 5c 
+*Output the confusion matrix. What is the false positive and false negative rate when we set the threshold to be 0.5?*  
+
 false positive rate at .5: .0455  
 false negative rate at .5: .1141  
 confusion matrix: 
@@ -247,6 +281,8 @@ table(glm.pred,test_spam$V58)
 ```
 
 ## 5d 
+*Adjust the threshold such that your chosen error (false positive or false negative) is no more than 0.03. You should choose the threshold carefully so that the true positive and true negative rate are also maximized.Report that threshold here.*  
+
 choose a threshold of 0.6722220 This will result in a false positive rate of 0.02985075
 ```{r, results='hide'}
 tail(fpr0.03)
@@ -254,6 +290,8 @@ tail(fpr0.03)
 ```
 
 ## 5e 
+*Implement LDA and repeat parts (b) -(d).*  
+
 LDA 
 ```{r}
 lda.fit = lda(V58~.,data=train_spam)
@@ -293,6 +331,8 @@ tail(fpr0.03)
 
 
 ## 5f 
+*Carry out QDA, Naive Bayes and KNN on the training set. You should experiment with values for K in the KNN classifier using cross-validation. Remember to standardize your predictors for KNN. For each classifier, report the confusion matrix and overall test error rates for each of the classifiers.*  
+
 QDA:  
 false positive rate at .5: .2331  
 false negative rate at .5: .0481  
@@ -373,9 +413,9 @@ table(knn.pred,test.Y)
 
 ```
 
-
-
 ## 5g 
+*Which classifier would you recommend for this data? Justify your answer.*  
+
 Since we are focused on minimizing false positive rates, I would choose LDA since it has the lowest false positive rate at .0426  
 
 

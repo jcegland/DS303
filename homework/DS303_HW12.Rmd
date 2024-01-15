@@ -16,14 +16,25 @@ library(ISLR2)
 
 # Problem 1: Concept Review 
 ## 1a 
+*Any time clustering is performed on a dataset, we will obtain clusters - even if there are truly no clusters in the dataset. What we really want to know if whether the clusters we have found represent real subgroups in the data or whether they are simply the result of clustering the noise. Use the statistical knowledge you’ve accumulated this semester to propose an approach to validate the clusters we obtain from a dataset.*  
+
 To determine whether or not clusters are valid, we can look at the within cluster variation and the between cluster variation. We want the within cluster variation to be low and the between cluster variation to be high. So we can create an ratio of the within cluster variation to the between cluster variation. So the sum of the average distance between each point in each cluster divided by the distance between the cluster centers. Then divide the sum of these ratios by the number of clusters. The lower this score is, the better the separation of the clusters. This will produce a numerical value for evaluating clusters. You could then try different methods of clustering with different amounts of clusters and different linkage types to see if the same clusters emerge and test those clusters with this numerical evaluation.  
 
 ## 1b 
+*Suppose we perform hierarchical clustering using single linkage and using complete linkage for a given dataset. We obtain two dendrograms;*  
+
+*At a certain point on the single linkage dendrogram, the clusters {1,2,3} and {4,5} fuse. On the complete linkage dendrogram, the clusters {1, 2, 3} and {4, 5} also fuse at a certain point. Which fusion will occur higher on the tree, or will they fuse at the same height, or is there not enough information to tell?*  
 i) These will not fuse at the same height. Since one uses single and the other uses complete, they use different measures to decide when to fuse. The single linkage will look at the closest distance between the 2 groups, while complete will use the largest distance between them. These will give different values unless each the points in one cluster are the same distance away from each of the points in the other cluster for some reason, which is not possible.  
 
+*At a certain point on a single linkage dendrogram, the clusters {5} and {6} fuse. On the complete linkage dendrogram, the clusters {5} and {6} also fuse at a certain point. Which fusion will occur higher on the tree, or will they fuse at the same height, or is there not enough information to tell?*  
 ii) These will fuse at the same height. Even though they use two different measures to decide when to fuse, since it is just a single node in each cluster, they will have the same distance apart no matter which method is used.  
 
 ## 1c 
+*The variance explained by the mth principal component is the defined as: (expression) *  
+*Therefore the proportion of variance explained (PVE) is: (expression) *  
+*On the USArrests data, calculate PVE (for all 4 principal components) in two ways:*  
+
+*Using the sdev output from the prcomp() function as we did in class.*  
 i) PVE using std  
 ```{r}
 pr.out = prcomp(USArrests,scale=TRUE) 
@@ -35,6 +46,8 @@ pve = pr.var / sum(pr.var)
 pve
 
 ```
+
+*By applying the above formula directly. That is, use the prcomp() function to compute the principal component loadings (φ) and plug them into the formula to obtain the PVE.*  
 ii)  PVE using formula  
 ```{r}
 ## principal component loadings: 
@@ -54,14 +67,17 @@ numerator/denom
 ```
 
 ## 1d 
-****come back to this**** 
-![](IMG_1342.jpg){width=50%}  
+*Let’s revisit least squares using SVD. Note that any matrix X can be decomposed into U, V and D such that X = U DV T . This decomposition is known as SVD (singular value decomposition). Prove that the following identities are true:*  
 
-Y = BhatX  
+![](beta_hat.jpg){width=50%}  
+
+*Explain why rewriting βˆ in terms of U , V , D, and Y has computational advantages. In fact, lm() uses matrix decomposition to speed up computing this step - which makes the function incredibly scalable for large datasets.*  
+iv) rewriting beta hat in terms of U, V, D, and Y is computationally advantageous for various reasons. Since U and V are orthogonal, the expressions simplifies significantly. Taking the inverse of (V D^2 V^T) into (V D^-2 V^T) is more computationally efficient than taking the inverse of (X^T X). This also helps scale large datasets and works well for high dimensional datasets by capturing the highest variability through the singular values in D.  
 
 
 # Problem 2: Simulations for Unsupervised Learning
-
+## 2a 
+*Generate a simulated dataset with 20 observations in each of 3 classes (for 60 observations total) and 50 features using the following code*  
 ```{r}
 ## 2a
 set.seed(1)
@@ -78,6 +94,8 @@ data = rbind(c1,c2,c3)
 ```
 
 ## 2b 
+*Perform PCA on the 60 observations. What is the PVE for the first two principal components?*  
+
 PVE for first two PC:  
 ```{r}
 pr.out = prcomp(data,scale=TRUE) 
@@ -86,9 +104,13 @@ pr.out$sdev[1:2]
 ```
 
 ## 2c 
+*Your colleague, who misunderstands PCA, is surprised by the PVE in part (b). They point out that we’ve generated data such that each observation’s 50 features come from a normal distribution (with only mean shift). We did not create a dataset where only a few dimensions are informative. Therefore, all of the dimensions should be equally interesting. Given this setup, your colleague does not understand why the first two principal components can explain so much of the variance in the dataset. Explain in plain language why your colleague’s understanding of PCA is wrong.*  
+
 The PCA is created such that the first principle component creates a linear combination of features in a way that explains the most variance. The second component finds the linear combination after that that explains the next most variance. So it doesn't just find the one most interesting predictor, it combines them to find the most interesting directions.  
 
 ## 2d 
+*Plot the first two principal component score vectors. Use a different color to indicate obser- vations in each of the three classes. Looking at the plot, are the classes well-separated?*  
+
 The groups are fairly well separated with a few exceptions.  
 ```{r}
 colors = c(rep('red', 20), rep('green', 20), rep('blue', 20)) 
@@ -98,6 +120,9 @@ plot(pr.out$x[,1:2], col=colors)
 ```
 
 ## 2e 
+*Perform K-means clustering of the observations with K = 3. How well do the clusters that you obtained in K-means clustering compare to the true class labels?*  
+*Hint: You can use the table() function in to compare the true class labels to the class labels obtained by clustering. Be careful how you interpret the results: K-means clustering will arbitrarily number the clusters, so you cannot simply check whether the true class labels and clustering labels are the same.*  
+
 k means with 3 clusters. This captures the clusters fairly well, with 5 data points mislabeled. 3 of the mislabeled data points came from true cluster 2 and 1 from each true cluster 1 and 3.  
 ```{r}
 #data=as.data.frame(data)
@@ -114,6 +139,8 @@ table(km.out$cluster, true_clust)
 ```
 
 ## 2f
+*Perform K-means clustering with K = 2. Describe your results.*  
+
 k means with 2 clusters:  
 true clusters 1 and 3 got separated into cluster 1 and 2, and true cluster 2 was split fairly evenly between cluster 1 and 2 
 ```{r}
@@ -128,6 +155,8 @@ table(km.out$cluster, true_clust)
 ```
 
 ## 2g 
+*Perform K-means clustering with K = 4. Describe your results.*  
+
 k means with 4 clusters:  
 Most of true cluster 1 was put into cluster 1 and all of true cluster 3 was put into cluster 3. True cluster 2 was mostly put into cluster 4 with some in cluster 2. 
 ```{r}
@@ -142,6 +171,8 @@ table(km.out$cluster, true_clust)
 ```
 
 ## 2h 
+*Now perform K-means clustering with K = 3 on the first two principal component score vectors, rather than on the raw data. That is, perform K-means clustering on the 60 × 2 matrix of which the first column is the first principal component score vector, and the second column is the second principal component score vector. How do your results compare to using the raw data? Discuss.*  
+
 k means clustering with 3 clusters in PCA  
 Using PCA captured the clusters better than the normal data did with only 2 data points in the wrong clusters. This is because the PCA can filter out the random noise of the data which leads to less overfitting.  
 ```{r} 
@@ -158,61 +189,179 @@ table(km.out$cluster, true_clust)
 
 # Problem 3: Matrix Completion 
 ## 3a 
+*Write an R function to perform matrix completion using the algorithm and example code outlined in lecture. In each iteration, the function should keep track of the relative error, as well as the iteration count. Iterations should continue until the relative error is small enough or until some maximum number of iterations is reached (set a default value for this maximum number). Further- more, there should be an option to print out the progress in each iteration.*  
+*Test your function on the Boston data (part of ISLR2 library). First, standardize the features to have mean zero and standard deviation one using the scale() function. Run an experiment where you randomly leave out an increasing (and nested) number of observations from 5% to 30%, in steps of 5%. Apply the matrix completion algorithm with M = 1, 2, . . . , 8. Plot the approximation error as a function of the fraction of observations that are missing, and the value of M, averaged over 10 repetitions of the experiment.*  
 
 ```{r} 
+## function 
+complete_matrix <- function(data, print, M){
+  Xhat = Xna
+  xbar = colMeans(Xna, na.rm = TRUE)
+  Xhat[index.na] = xbar[inb]
+  
+  thresh = 1e-7
+  rel_err = 1
+  iter = 0
+  ismiss = is.na(Xna)
+  mssold = mean((scale(Xna, xbar, FALSE)[!ismiss])^2)
+  mss0 = mean(Xna[!ismiss]^2)
+  
+  while(rel_err > thresh) {
+    iter = iter + 1
+    # Step 2(a)
+    Xapp = fit.svd(Xhat, M = M)
+    # Step 2(b)
+    Xhat[ismiss] = Xapp[ismiss]
+    # Step 2(c)
+    mss = mean(((Xna - Xapp)[!ismiss])^2)
+    rel_err = (mssold - mss) / mss0
+    mssold = mss
+    
+    if (print==TRUE){
+      cat("Iter:", iter, "MSS:", mss,
+      "Rel. Err:", rel_err, "\n")
+    }
+    
+  }
+  return (Xhat)
+  
+  
+}
+
+fit.svd = function(X, M = 1) {
+  svdob = svd(X)
+  with(svdob,
+       u[, 1:M, drop = FALSE] %*%
+         (d[1:M] * t(v[, 1:M, drop = FALSE]))
+  )
+}
+
+```
+
+```{r}
+par(mfrow=c(2,4))
+set.seed(NULL)
 X = data.matrix(scale(Boston))
 
-nomit = 20
-set.seed(15)
-ina = sample(seq(50), nomit)
-inb = sample(1:4, nomit, replace = TRUE)
-Xna = X
-index.na = cbind(ina, inb)
-Xna[index.na] = NA
+store_results = matrix(NA, 6, 10) #rows are how much is missing, cols are 10 repetitions
+final_results = matrix(NA, 6, 8) #rows are how much is missing avgeraged across 10 reps, cols are M values
 
+#error = complete_matrix(Xna, print=FALSE, M=1)
+#Xhat
+ina = c()
+inb = c()
+prev_nomit = 0
+# increasing by 5% would take away 25.3 observations each time 
+for (j in 1:8) { # for different M values 
+  for (z in 1:10){ # repeat 10 times 
+    values_left = seq(nrow(Boston))
+    ina = c()
+    inb = c()
+    prev_nomit = 0
+    for (i in 1:6){ # increasing missing values 
+        percent_missing = (i*5)/100
+        nomit = ceiling(nrow(Boston)*percent_missing)
+        
+        additional = nomit - prev_nomit
+        ina = c(ina, sample(values_left, additional))
+        values_left = values_left[-ina] 
+        
+        new_inb = sample(1:13, additional, replace = TRUE)
+        inb = c(inb, new_inb)
+        Xna = X
+        index.na = cbind(ina, inb)
+        Xna[index.na] = NA
+        
+        prev_nomit = nomit
+        
+        
+        # function call 
+        Xhat = complete_matrix(Xna, print=FALSE, M=j)
+        
+        error = mean((Xhat-X)^2) 
+        
+        
+        store_results[i,z] = error
+    
+    }#end i 
+    
+      
+  }#end z 
+  # average across 10 repetitions 
+  averages = data.frame(apply(store_results, 1, mean))
+  #store_results[i,j] = mean(rep_10)
+  final_results[,j] = t(averages)
+  #title = "M value: " + toString(j) 
+  plot(final_results[,j], main=j)
+}#end j 
 
-
-
-
-
-
-
-
-
-
+#plot(final_results[,6])
 ```
 
 
+# Problem 4: Hierarchical clustering and Classification
+*The dataset gene.csv consists of 40 tissue samples with measurements on 1,000 genes. The first 20 samples are from healthy patients, while the second 20 are from a diseased group. Load in the data using read.csv(). You will need to select header = F.*  
 
+## 4a 
+*Apply hierarchical clustering to the samples using correlation-based distance, and plot the dendrogram. Do the genes separate the samples into the two groups? Do your results depend on the type of linkage used? Discuss and report your results. To implement the correlation-based distance, use the function cor() and then pass it through the dist() function: distM = dist(cor(data).*  
+
+Yes, hierarchial clustering separates the data into 2 groups. These 2 groups are the same for each linkage method used but the ordering of merges made is different for each linage method. Each method recovered the original 2 groups. For each method, the 2 true groups merge at different heights due to the varying linkage methods used.  
 ```{r} 
+gene = read.csv("/Users/jillianeglandschool/Desktop/DS303/homework/gene.csv",header=FALSE)
 
+distM = dist(cor(gene))
+
+hc.complete <- hclust(distM, method="complete")
+hc.average <- hclust(distM, method="average")
+hc.single <- hclust(distM, method="single")
+
+par(mfrow=c(1,3))
+plot(hc.complete, main = "Complete Linkage", xlab = "", sub ="", cex = 0.9)
+plot(hc.average, main = "Average Linkage", xlab = "", sub ="", cex = 0.9)
+plot(hc.single, main = "Single Linkage", xlab = "", sub ="", cex = 0.9)
+
+#cutree(hc.complete,2) 
+#cutree(hc.average,2)
+#cutree(hc.single,2)
 
 
 ```
 
+## 4b 
+*Technically, we can covert this to a classification problem where the label Y = 0 if the tissue is healthy and Y = 1 if the tissue is diseased. The measurements on 1,000 genes will be used as our predictors. Can logistic regression, LDA, or QDA be applied here? Explain why logistic/LDA/QDA will fail here.*  
 
+No, they cannot. Logistic regression does not work with high dimensional data so since we have 40 samples with 1000 predictors, logistic regression would fail. However LDA and QDA are dimension reduction methods so they would not fail, but LDA would work better with a smaller number of observations. 
 
+## 4c 
+*Convert the setting to a classification problem and implement a solution that allows us to fit logistic regression to the dataset. Make sure Y is stored as a factor(). Justify your approach. Report the confusion matrix and misclassification error rate. Since we have a limited sample size, you do not need to split the data into a training and test set. Hint: PCA.*  
+By applying PCA, we can reduce that data into fewer dimensions. I chose the first 5 principle components as they explained 84% of the variance and applied logistic regression using thos principle components as the predictors. This yielded a misclassification error rate of 0. There is however, a warning since the classes are well separated.  
 ```{r} 
+Y = c(rep(0, 20), rep(1, 20)) # 0 means healthy, 1 means diseased 
+gene1 = data.frame(t(gene))
+
+pr.out = prcomp(gene1,scale=FALSE)
+z_score = pr.out$x # z scores 
+
+
+pr.var = svd(X)$d^2/49
+pve = pr.var / sum(pr.var)
+plot(cumsum(pve), xlab = "Principal Component",
+       ylab = "Cumulative Proportion of Variance Explained", ylim = c(0, 1), type = "b")
+#cumsum(pve) ##chose 5 PCs 
+
+gene2 = data.frame(cbind(pr.out$x[,1:5], Y))
+
+glm.fit = glm(Y~., data=gene2, family='binomial')
+#summary(glm.fit)
+glm.prob = predict(glm.fit,gene2,type='response') 
+glm.pred = rep(0,nrow(gene2))
+glm.pred[glm.prob >0.5] ='1'
+table(glm.pred,gene2$Y)
+mean(glm.pred != gene2$Y)
 
 
 
 ```
-
-
-
-```{r} 
-
-
-
-```
-
-
-
-
-
-
-
-
 
 
 

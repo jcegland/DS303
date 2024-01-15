@@ -19,22 +19,33 @@ library(caret)
 
 # Problem 1: Conceptual Review
 ## 1a 
+*Suppose we obtained ten bootstrapped samples from a data set where Y can take two values: red or green. We then apply a classification tree to each bootstrapped sample, and for a specific value of X, produce 10 estimates of P(Y = red|X): 0.1, 0.15, 0.2, 0.2, 0.55, 0.6, 0.6, 0.65, 0.7, 0.75.*  
+*There are two common ways to combine these results together into a single class prediction. One is the majority vote approach discussed in lecture. The second approach is to classify based on the average probability. In this example, what is the final classification under each of these two approaches?*  
+
 under the majority vote approach:  
 6 are classified as red, 4 as green, so it would be classified as red.  
 under the average probability approach:  
 the average probability is 4.5/10=.45 so it would be classified as green  
 
 ## 1b 
+*See Figure 1. Sketch the tree corresponding to the partition of the predictor space illustrated on the left-hand side of Figure 1. The numbers inside the boxes indicate the mean of Y within each region.*  
+
 ![](IMG_1215.jpg){width=50%}
 
 ## 1c 
+*See Figure 1. Create a diagram (similar to the left-hand size of Figure 1) using the tree illustrated in the right-hand side of Figure 1. You should divide up the predictor space into the correct regions, and indicate the mean for each region.*  
+
 ![](IMG_1217.jpg){width=50%}
 
 ## 1d 
+*Can bagging ever result in a higher variance than an individual tree? Justify your answer by a simple argument using statistical ideas or theory.*  
+
 No, it will always result in a lower variance, but sometimes the reduction in variance is only a small one. Using bagging, we average the trees which reduces the variance. the variance of the average  of independent variables is σ^2/n, but if they are uncorrelated, the variance of their average is 1/4(var(Z1) + var(Z2) + 2Cov(Z1, Z2)). If the variables are very correlated, this correlation will decrease the amount of reduction in variance.  
 
 
 # Problem 2: Basics of Decision Trees 
+## 2a 
+*Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.*  
 
 ```{r}
 set.seed(2)
@@ -47,6 +58,8 @@ test = OJ[-train_index,]
 ```
 
 ## 2b 
+*Fit a tree to the training data with Purchase as the response and the other variables as predictors. Produce summary statistics about the tree (using the summary() function) and describe the results obtained. What is the training error? How many terminal nodes does the tree have?*  
+
 training error: 127/800  
 9 terminal nodes  
 ```{r}
@@ -58,6 +71,8 @@ summary(tree.oj)
 
 
 ## 2c 
+*Type in the name of the tree object in order to get a detailed text output. Pick one of the terminal nodes and interpret the information displayed.*  
+
 terminal node: 25) PriceDiff > -0.35 81  103.10 CH ( 0.66667 0.33333 ) * 
 When LoyalCH is >0.5036 and <0.738 and PriceDiff is <0.265 and >-0.35, the predicted response is CH.   
 ```{r}
@@ -65,6 +80,8 @@ tree.oj
 ```
 
 ## 2d 
+*Create a plot of the tree, and interpret the results.*  
+
 This tree only used LoyalCH, Store, PriceDiff, SpecialCH, and WeekofPurchase as spliting points, so it has deemed those most important. Since LoyalCH is the first split, it had the largest reduction in MSE.  
 ```{r}
 plot(tree.oj)
@@ -73,6 +90,8 @@ text(tree.oj,pretty=0)
 ```
 
 ## 2e 
+*Predict the response on the test set and report the confusion matrix. What is the test error?*  
+
 confusion matrix and misclassification rate:  
 ```{r}
 tree.pred = predict(tree.oj, newdata=test, type='class')
@@ -84,6 +103,7 @@ mean(tree.pred!=test$Purchase)
 ```
 
 ## 2f 
+*Apply cv.tree() to determine the optimal tree size. Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.*  
 
 ```{r}
 cv.oj = cv.tree(tree.oj) #performs CV in on order to the determine the optimal level of tree complexity. 
@@ -94,6 +114,8 @@ plot(cv.oj$size, cv.oj$dev, type='b')
 ```
 
 ## 2g 
+*What tree size corresponds to the lowest cross-validated classification error rate?*  
+
 tree size corresponding to the lowest cross-validated classification error rate:  
 ```{r}
 cv.oj$size[which.min(cv.oj$dev)]
@@ -101,6 +123,8 @@ cv.oj$size[which.min(cv.oj$dev)]
 ```
 
 ## 2h 
+*Produce a pruned tree corresponding to the optimal tree size obtained using cross-validation. If cross-validation does not lead to selection of a pruned tree, then create a pruned tree with five terminal nodes.*  
+
 pruned tree of best size:  
 ```{r}
 prune.oj= prune.tree(tree.oj,best=cv.oj$size[which.min(cv.oj$dev)]) #best represents the size of a specific subtree in the cost-complexity sequence to be returned
@@ -112,6 +136,8 @@ text(prune.oj,pretty=0)
 ```
 
 ## 2i 
+*Compare the training error rates between the pruned and un-pruned trees. Which is higher? Is this what you expect? Explain.*  
+
 the training misclassification rate is larger for the pruned tree. This is what I would expect as the original tree would be very overfit to the training data, so pruning it would increase the training error. 
 ```{r}
 ## original tree 
@@ -123,6 +149,8 @@ summary(prune.oj)$misclass
 ```
 
 ## 2j 
+*Compare the test errors rates between the pruned and un-pruned trees. Which is higher? Is this what you expect? Explain.*  
+
 The misclassification rates for both the pruned and unpruned trees are extremely similar. I would have expected the pruned tree to do better since it was less overfit. 
 ```{r}
 ## original tree 
@@ -139,7 +167,8 @@ mean(prune.pred != test$Purchase)
 
 
 # Problem 3: Bagging and Random Forests
-
+## 3a 
+*Split the data set into a training and test set. Convert Sales to a qualitative response, the same way we did in class.*  
 ```{r}
 Carseats$High <- factor(ifelse(Carseats$Sales <=8, "No", "Yes"))
 Carseats1 = Carseats[,-1]
@@ -152,6 +181,8 @@ test = Carseats1[-train_index, ]
 ```
 
 ## 3b 
+*Fit a classification tree to the training set. Use gini index as your splitting criteria. Plot the tree here and interpret the results. Report your training and test error.*  
+
 This tree only used 8 variables out of 11. Advertising was the first split, and therefore the most important in lowering MSE, and Price was the second.  
 Training MSE: 27/200 = 0.145  
 Test MSE: .325
@@ -171,6 +202,8 @@ text(tree.car,pretty=0)
 ```
 
 ## 3c 
+*Implement cross-validation to obtain the optimal level of tree complexity. What size tree is optimal? What is the test error for the pruned tree?*  
+
 optimal tree size:   
 ```{r}
 cv.car = cv.tree(tree.car)
@@ -186,6 +219,8 @@ mean(pred.car!=test$High)
 ```
 
 ## 3d 
+*Implementing bagging on the training set. Set B = 500, where B is the number of trees. What test error do you obtain? Use the importance() function to determine which variables are the most important and report them here.*  
+
 test MSE: 0.205 
 ```{r, results='hide'}
 bag.car = randomForest(High~.,data=train, mtry = dim(Carseats1)[2]-1, importance = TRUE, ntree=500)
@@ -199,6 +234,8 @@ importance(bag.car)
 ```
 
 ## 3e 
+*Implement random forests on the training. Experiment with different values of m and report the test error for different values of m in a table.*  
+
 ```{r}
 m_list = c(1:10)
 error_list = rep(NA, 10)
@@ -219,9 +256,13 @@ kable(output, format = "html") %>% kable_styling()
 ```
 
 ## 3f 
+*Looking at your table from part (e), would it be appropriate to choose the m that gives us the smallest test error? Explain. (Hint: the answer is no.)*  
+
 No, we cannot choose the one that produces the lowest test MSE. This is a form of double dipping as we just pick the model that does the best for the data given. It doesn't say anything about how well it performs on new data. 
 
 ## 3g 
+*Technically m is a tuning parameter. Implement a data-driven approach to decide on the appropriate m. Report that value here.*  
+
 I implemented 10 fold validation to test 10 different values of m. This method chose m=5 as the best value for m.  
 ```{r, results='hide'}
 flds <- createFolds(train$High, k = 10, list = TRUE, returnTrain = FALSE)
@@ -258,6 +299,9 @@ M[bestMIndex]
 ```
 
 ## 3h 
+*Obtain the OOB error estimation from implementing random forests. Set seed to be 1, B = 500, and m = 6. Write your own code to do so. Since this is a classification problem, the OOB error estimation will be calculated as the misclassification error (not the MSE). As general advice, you will want to run your code line-by-line and check the output. It can be frustrating to troubleshoot your code if you run chunks of code all at once. Report the following:*  
+
+*What is the total number of bootstrapped trees the 4th observation appears?*  
 i) The 4th observation appears in 300 trees  
 ```{r}
 set.seed(1)
@@ -269,7 +313,7 @@ table(rf.car$inbag[4,]!=0)
 ```
 
 
-
+*Report your OOB error estimation. Copy/paste any relevant R code here.*  
 iii) 
 ```{r, echo=TRUE} 
 
@@ -300,7 +344,7 @@ mean((yhat != Carseats1$High)^2)
 ```
 
 
-
+*What is the OOB classification for the 10th observation (based on majority vote). What are the OOB proportions of ”No” and ”Yes” for observation 10?*  
 ii)  
 prediction for observation 10:  
 ```{r}

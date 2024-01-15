@@ -16,8 +16,12 @@ library(kableExtra)
 library(leaps)
 library(caret)
 ```
+*The data for this problem comes from a study by Stamey et al. (1989). They examined the relationship between the level of prostate-specific antigen and a number of clinical measures in men who were about to receive a radical prostatectomy. The variables are log cancer volume (lcavol), log prostate weight (lweight), age, log of the amount of benign prostatic hyperplasia (lbph), seminal vesicle invasion (svi), log of capsular penetration (lcp), Gleason score (gleason), and percent of Gleason scores 4 or 5 (ppp45). The last column corresponds to which observations were used in the training set and which were used in the test set (train).*  
+*Our response of interest here is the log prostate-specific antigen (lpsa). We will use this data set to practice 3 common subset selection approaches.*  
 
 ## 1a 
+*Approach 1: Perform best subset selection on the entire data set with lpsa as the response. For each model size, you will obtain a ’best’ model (size here is just the number of predictors in the model): M1 is the best model with 1 predictor (size 1), M2 is the best model with 2 predictors (size 2), and so on. Create a table of the AIC, BIC, adjusted R2 and Mallow’s Cp for each model size. Report the model with the smallest AIC, smallest BIC, largest adjusted R2 and smallest Mallow’s Cp. Do they lead to different results? Using your own judgement, choose a final model.*  
+
 Best model by BIC: M3  
 Best model by AIC: M5  
 Best model by Mallow's Cp: M5  
@@ -60,6 +64,9 @@ kable(coef(regfit,6), format = "html", caption='M6') %>% kable_styling()
 
 
 ## 1b 
+*Approach 2: The dataset has already been split into a training and test set. Construct your training and test set based on this split. You may use the following code for convenience:*  
+*For each model size, you will obtain a ‘best’ model. Fit each of those models on the training set. Then evaluate the model performance on the test set by computing their test MSE. Choose a final model based on prediction accuracy. Fit that model to the full dataset and report your final model here.*  
+
 This method picks model 3 as the best model for having the best test MSE.  
 Model 3: Y = -1.0227780 + 0.5199861(lcavol) + 0.7367954(lweight) + 0.5379032(svi)  
 
@@ -96,6 +103,15 @@ kable(coef(regfit,3), format = "html", caption='M3') %>% kable_styling()
 
 
 ## 1c 
+*Approach 3: This approach is used to select the optimal size, not which predictors will end up in our model. Split the dataset into k folds (you decide what k should be). We will perform best subset selection within each of the k training sets. Here are more detailed instructions:*  
+*i. For each fold k = 1,...,K:*  
+  *1. Perform best subset selection using all the data except for those in fold k (training set). For each model size, you will obtain a ‘best’ model.*  
+  *2. For each ‘best’ model, evaluate the test MSE on the data in fold k (test set). *  
+  *3. Store the test MSE for each model.*  
+  
+*Once you have completed this for all k folds, take the average of your test MSEs for each model size. In other words, for all k models of size 1, you will compute their k- fold cross-validated error. For all the k models of size 2, you will compute their k-fold cross-validated errors, and so on. Report your 8 CV errors here.*  
+*ii. Choose the model size that gives you the smallest CV error. Now perform best subset selection on the full data set again in order to obtain this final model. Report that model here. (For example, suppose cross-validation selected a 5-predictor model. I would perform best subset selection on the full data set again in order to obtain the 5-predictor model.)*  
+
 k folds subset approach chose a size 3 model as the best model.  
 
 ```{r, results='hide'}
@@ -139,8 +155,13 @@ kable(coef(best_mod,id=3), format = "html", caption='M3') %>% kable_styling()
 
 
 # Problem 2: Simulation Studies 
+*We have seen that as the number of features used in a model increases, the training error will necessarily decrease, but the test error may not. We will now explore this in a simulated data set.*  
 
 ## 2a 
+*Generate a data set with p = 20 features, n = 1000 observations, and an associated response vector Y generated according to the model: Y =Xβ+ε,*  
+*where β is a vector of population parameters that has some elements that are exactly equal
+to zero. Note you decide what β is and which are equal to 0.*  
+
 generating dataset: all betas except for 1,2,3,4,5,6,10,11 are equal to 0.  
 ```{r}
 #set.seed(1)
@@ -160,6 +181,9 @@ Y = X%*%betas + error
 ```
 
 # 2b 
+*Split your data set into a training set containing 100 observations and a test set containing
+900 observations.*  
+
 split into test (size 100) and train (size 900). 
 ```{r}
 test_index = sample(1:1000, 100, rep=FALSE)
@@ -172,6 +196,8 @@ train = data.frame(Y = Y[-test_index], X[-test_index,])
 ```
 
 # 2c 
+*Perform best subset selection on the training set, and plot the training set MSE associated with the best model of each size.*  
+
 Training MSE for each best model:  
 best training MSE is model 20.  
 ```{r}
@@ -183,6 +209,8 @@ plot(regfit.sum$rss/20)
 ```
 
 # 3d 
+*Plot the test set MSE associated with the best model of each size.*  
+
 Test MSE for each best model:  
 ```{r}
 ## finds test MSE 
@@ -201,6 +229,8 @@ plot(val.errors)
 ```
 
 # 3e 
+*For which model size does the test set MSE take on its minimum values? Comment on your results. If it takes on its minimum value for a model containing only an intercept or a model containing all of the features, then play around with the way that you are generating the data in (a) until you come up with a scenario in which the test set MSE is minimized for an intermediate model size.*  
+
 Model 8 has the minimum test MSE value. It did not continue to decrease when more predictors were added like the training MSE did. 
 ```{r, results = 'hide'}
 which.min(val.errors)
@@ -209,6 +239,8 @@ which.min(val.errors)
 ```
 
 # 3f 
+*How does the model at which the test set MSE is minimized compare to the true model used to generate the data? Comment on the regression coefficient values.*  
+
 The model with the best test MSE is a model with 8 predictors, which is the same as the true model. The true model had 8 predictors with the rest of the betas equal to 0. The predictors picked by the best model were the same predictors in the true model that weren't equal to 0, with very close to the true beta values. 
 ```{r}
 coef(regfit,id=which.min(val.errors)) 
@@ -221,12 +253,17 @@ coef(regfit,id=which.min(val.errors))
 # Problem 3: Cross-validation 
 
 # 3a 
+*Explain how k-fold cross-validation is implemented.*  
+
 K folds separate the dataset into k sections. It will loop k times, and each time, one of the k sections is used as the test set, with the other k-1 sections as the training set. A model is then fit using the training set, and a Test MSE is calculated using a prediction from the training set and the values in the test set.  
 
 # 3b 
-LOOCV takes into account the problem of Test MSE validation, which is that it is not able to leverage the whole dataset since it is random. However, the problem with LOOCV is that is is computationally expensive as you have to loop through all the data n times and refit each time. K folds validation also accounts for the problems of Test MSE validation, but also accounts for the problem of LOOCV. With the data split k ways, you only have to loop and refit the data k times instead of n times. One problem with K fold validation is still that you can't use it for very small datasets. It helps with leveraging more of the dataset, but still might leave some out if there is a smaller representation of a certain population. Another problem of K fold as compared to LOOCV is that k fold still has some randomness as to which values get put into which fold. LOOCV gives the same results every time.   
+*What are the advantages and disadvantages of k-fold cross-validation relative to: The validation set approach?, LOOCV? * 
+Validation set approach: advantage of k-fold is we get to utilize more data for training.testing purposes. The disadvantage is that it is not as easy to implement and can be more computationally intensive to implement.  
+LOOCV: advantage is that k-fold is less computationally intensive than LOOCV. Disadvantage is the k-fold untilizes less data and it still has randomness.  
 
 # 3c 
+*For the following questions, we will perform cross-validation on a simulated data set. Generate a simulated data set such that Y = X−2X^2+ε, with ε∼N(0,12). Fill in the following code:* 
 
 ```{r}
 set.seed(1)
@@ -237,6 +274,8 @@ y = x - 2*x^2 + error
 ```
 
 # 3d 
+*Fit a linear model to the data set you simulated (y ∼ x) and check whether or not the linearity assumption holds. Present the corresponding diagnostic plot and interpret what you observe.*  
+
 The linearity assumption does not hold. The residual plot clearly shows a curve on the red line, indicating that the model is not linear. 
 ```{r}
 fit = lm(y~x)
@@ -248,6 +287,8 @@ plot(fit)
 ``` 
 
 # 3e 
+*Set a random seed, and then compute the LOOCV errors that result from fitting the following 4 models using lm and poly:*  
+
 LOOCV errors: 
 ```{r}
 df = data.frame(x, y)
@@ -284,6 +325,8 @@ mean(MSE_M4)
 ``` 
 
 # 3f 
+*Repeat the above step using another random seed, and report your results. Are your results the same as what you got in (d). Why?*  
+
 The results were exactly the same. This is because LOOCV is consistent. Each observation gets a chance to be the test set one time, so the value, which is the average of all the error of each test set, will come out the same every time.  
 ```{r, results = 'hide'}
 df = data.frame(x, y)
@@ -320,10 +363,14 @@ mean(MSE_M4)
 ```
 
 # 3g 
+*Which of the models in (d) had the smallest LOOCV error? Is this what you expected? Explain your answer.*  
+
 The smallest LOOCV error was from the quadratic model. This is what I expected; since the true model was quadratic, the best model should also be quadratic.  
 
 
 # 3h 
+*Comment on the statistical significance of the coefficient estimates that results from fitting each of the models in (d) using least squares. Do these results agree with the conclusions drawn based on the cross-validation results?*  
+
 For the models that had coefficients past the second exponential, those coefficients were not statistically significant. This agrees with the results from the cross validation that indicated that the quadratic model was the best model. Any coefficients past x^2 would not be statistically significant.  
 
 ```{r, results = 'hide'}
@@ -345,21 +392,36 @@ summary(M4)
 # Problem 4: Concept Review 
 
 # 4a 
+*For the following statement, state whether or not it is True or False. Briefly justify your answer. Suppose I have 3 models to pick from: (not nested predictors, same number of predictors) *  
+*Using AIC, BIC, Mallow’s Cp, adjusted R2 could lead us to pick different final models.*  
+
 False, they will lead us to pick the same model. Since they each have the same number of predictors, the penalty will be constant for each.  
 
 # 4b 
+*For the following statement, state whether or not it is True or False. Briefly justify your answer. Suppose I have 2 models to pick from: (not nested predictors) *  
+*It must be that RSS3 ≥ RSS4*  
+
 False, RSS4 only decreases from RSS3 when they are nested, meaning that RSS4 has the same predictors as RSS3 but with an additional predictor. Since M4 doesn't include X1 and X2, they are not nested, and the statement does not hold.  
 
 # 4c 
+*For the following statement, state whether or not it is True or False. Briefly justify your answer. Suppose I have 2 models to pick from: (nested predictors) *  
+*It must be that RSS2 ≥ RSS3*  
+
 True, since M2 is nested in M4, this is true. We have a RSS for M2, adding a predictor will either decrease the RSS or stay the same. This is true for adding a second extra predictor. So the statement holds.  
 
 # 4(a) 
+*Subset selection will produce a collection of p models M1,M2,...,Mp. These represent the ‘best’ model of each size (where ‘best’ here is defined as the model with the smallest RSS). Is it true that the model identified as Mk+1 must contain a subset of the predictors found in Mk? In other words, is it true that if M1 : Y ∼ X1, then M2 must also contain X1. And if M2 contains X1 and X2, then M3 must also contain X1 and X2? Explain your answer.*  
+
 No, that is false. Mk will not necessarily be nested in Mk+1. In this exhaustive search, every combination is searched so it doesn't just find the next best variable to add. It checks the RSS of every combination of that size. So if the interaction between the variables when Mk+1 doesn't include X1 even though Mk does results in a smaller RSS, that will be chosen as the best model for the size.  
 
 # 4(b) 
+*What advantages are there to using AIC/BIC instead of using the test MSE as our model selection criteria? Explain.*  
+
 Test MSE means we have to split our data into training and test subsets. However, this means that not all of our data is leveraged in the model. We will have different data every time since it is a random split, so it's inconsistent. AIC/BIC will be more consistent and will leverage all the data. Both of these will also either choose the true model every time or find the one that mimics the true model the closest. AIC/BIC should be used when there is a small sample size, and you cannot afford to split your data into different sets.  
 
 # 4(c) 
+*Suppose your colleague fit a multiple linear regression model on a dataset with response Y and p predictors X1, X2, . . . , Xp. Their p-value for one of the predictors is 0.0647. It is not significant at α = 0.05 so your colleague claims that the predictor is not meaningful and suggests fitting a model without this predictor. Do you agree or disagree with their claim? Justify your answer.*  
+
 Disagree, looking at individual p values is not always the most reliable. It may be that the interaction of those specific variables is an accurate representation of the true model. The more accurate assessment of the model would be looking at it's overall values, such as it's overall p value, test MSE, adj R^2, or AIC/BIC values.  
 
 

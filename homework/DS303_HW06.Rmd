@@ -23,9 +23,13 @@ library(glmnet)
 
 # Poblem 1 Follow-up to in-class activity 
 ## 1a 
+*Clearly the models in Part 2 and Part 3 are not equivalent. Explain again in plain language (using plots if you deem it helpful) why these two approaches will not give the same results.*  
+
 They aren't the same because the first example (where the models for different genders only differed by the intercpet), assumes that bmi and age affect charges at the same rate for both males and females. The second example includes an interaction between gender and the rates of change for bmi and age. Both of those predictors will affect charges differently for males and females and will allows the slopes to be different.  
 
 ## 1b 
+*Load in the Insurance dataset again. Show how you can modify the model in Part 2 so that it is exactly equivalent to the models in Part 3. Present your code and results to show that the fitted models for males only and females only are exactly the same in Part 2 and Part 3 (after making your modification).*  
+
 ```{r, results = 'hide'}
 insurance=read.csv("/Users/jillianeglandschool/Desktop/DS303/insurance.csv") 
 insurance$gender = as.factor(insurance$gender)
@@ -66,6 +70,8 @@ females: -4515.22 + 246.92(age) + 241.32(bmi)
 These are now the same as Part 3.  
 
 ## 1c 
+*Other than domain knowledge, how might you determine empirically (in a data-driven way) that an interaction term is needed in the model? Justify and then implement your approach here on the Insurance dataset.*  
+
 We can use test MSE to determine which model is better.  
 ```{r, results = 'hide'}
 set.seed(13)
@@ -92,7 +98,14 @@ Since the test MSE is lower for the model with interactions, it is a better fit.
 
 # Problem 2: Predictions in the presence of multicollinearity 
 ## 2a 
+*Is multicollinearity a problem for making accurate predictions? Make an educated guess based on what we have learned in class.*  
+
 I would say that multicollinearity would not affect the accuracy of the model. It only affects our ability to make inferences about our model. So we have limited power in our hypothesis tests, but multicollinearity does not affect the accuracy of the model itself.  
+
+## 2b 
+*Let’s carry out a simulation study to answer this. We will simulate data with and without multicollinearity. This is our true model: Yi =β0 +β1Xi1 +β2Xi2 +εi *  
+*where i=1,...,100,ε∼N(μ=0,σ2 =4),β0 =3,β1 =2,andβ2 =4. To generate your predictors with multicollinearity use the following code:*  
+*Using these predictors, generate your Y values in R. Check the correlation between x1 and x2 using the cor() function. Report that value here.*  
 
 ```{r}
 ## 2b 
@@ -108,9 +121,12 @@ x2 = 0.8*x1 + rnorm(100,0,0.1)
 
 Y=B0 + B1*x1 + B2*x2 + error 
 data = data.frame(cbind(x1, x2, Y))
+cor(x1,x2)
 ```
 
 ## 2c 
+*Split your data into a training set and test set. Train your model on the training set. Report the test MSE for this model.*  
+
 test MSE for multicollinearity model:  
 ```{r}
 n = dim(data)[1]
@@ -128,6 +144,8 @@ m1ts
 ```
 
 ## 2d 
+*Repeat this process 2,500 times. Each time you’ll need to generate a random set of Y’s, fit a model on your training set, and then obtain the test MSE for that model. We do not need to generate new predictor values (again, think about why). Remember to store the test MSE for each iteration and do not set seed. What is the mean test MSE in this setting when the predictors are highly correlated? Plot a histogram of your 2,500 test MSEs and comment on what you observe.*  
+
 mean test MSE for multicollinearity model:  
 ```{r}
 set.seed(NULL)
@@ -148,6 +166,8 @@ The histogram is skewed to the right and centered around 1.5
 
 
 ## 2e 
+*Now generate predictors without multicollinearity using the following code: Using these predictors, generate your Y values in R. Check the correlation between x1 and x2. Report that value here.*  
+
 correlation value between x1 and x2:  
 ```{r}
 
@@ -163,6 +183,8 @@ cor(x1,x2)
 ```
 
 ## 2f 
+*Again run 2,500 simulations to obtain the test MSE of our model when the predictors are not correlated. What is the mean test MSE in this setting when the predictors are not correlated? Plot a histogram of your 2,500 test MSEs and comment on what you see.*  
+
 mean test MSE for uncorrelated model: 
 ```{r}
 set.seed(NULL)
@@ -182,11 +204,14 @@ hist(test_MSEs)
 The histogram is still right skewed and is centered around 1.5 again.  
 
 ## 2g 
+*Based on our simulation study, is multicollinearity a problem for making accurate predictions? Comment on your findings.*  
+
 Since the test MSE's for both the correlated model and the uncorrelated model were centered around the same value, the accuracy of the model's prediction was not affected by the multicollinearity.  
 
 
 # Problem 3 
-
+## 3a 
+*Split the data set into a training and a test set. Please set.seed(12) so that we can all have the same results.*  
 ```{r}
 n = dim(College)[1]
 set.seed(12)
@@ -198,6 +223,8 @@ test_college = College[-train_index,]
 ```
 
 ## 3b 
+*Fit a ridge regression model (using all predictors) on the training set. The function glmnet, by default, internally scales the predictor variables so that they will have standard deviation 1. Explain why this scaling is necessary when implementing regularized models.*  
+
 It is important to scale the predictors to the same standard deviation because you want the penalty to affect the predictors the same. Adding 50 to a predictor that is hundreds of thousands of dollars would be very different to adding 50 to a predictor of age.  
 ```{r}
 train_x = model.matrix(Apps~.,data=train_college)[,-1] 
@@ -209,6 +236,8 @@ ridge.train = glmnet(train_x,train_y,alpha=0, lambda=grid)
 ```
 
 ## 3c 
+*Find an optimal λ for the ridge regression model on the training set by using 5-fold cross- validation. Report the optimal λ here.*  
+
 best lambda value for ridge:  
 ```{r}
 set.seed(12)
@@ -221,6 +250,8 @@ bestlambda
 ```
 
 ## 3d 
+*What is the value of the l2 norm of the estimated regression coefficients (excluding the in- tercept) associated with the optimal λ for ridge regression? You can evaluate this from the training set.*  
+
 l2 norm for ridge:  
 ```{r}
 final_model = glmnet(train_x,train_y,alpha=0, lambda=bestlambda) 
@@ -231,6 +262,8 @@ sqrt(sum(coefficients_final^2))
 ```
 
 ## 3e 
+*Using that optimal λ, evaluate your trained ridge regression model on the test set. Report the test MSE obtained.*  
+
 test MSE for ridge model with optimal lamda:  
 ```{r}
 test_x = model.matrix(Apps~.,data=test_college)[,-1] 
@@ -242,6 +275,8 @@ mean((ridge.pred-test_y)^2)
 
 
 ## 3f 
+*Find an optimal λ for the lasso regression model on the training set by using 5-fold cross- validation. Report the optimal λ here.*  
+
 best lambda value for lasso:  
 ```{r}
 lasso.train = glmnet(train_x,train_y,alpha=1, lambda=grid) 
@@ -256,6 +291,8 @@ bestlambda
 ```
 
 ## 3g 
+*What is the value of the l1 norm of the estimated regression coefficients (excluding the in- tercept) associated with the optimal λ for lasso regression? You can evaluate this from the training set.*  
+
 l1 norm for lasso:  
 ```{r}
 final_model = glmnet(train_x,train_y,alpha=1, lambda=bestlambda) 
@@ -266,6 +303,8 @@ sum(abs(coefficients_final))
 ```
 
 ## 3h 
+*Using that optimal λ, evaluate your trained lasso regression model on the test set. Report the test MSE obtained.*  
+
 test MSE for lasso model with optimal lamda:  
 ```{r}
 test_x = model.matrix(Apps~.,data=test_college)[,-1] 
@@ -276,6 +315,8 @@ mean((lasso.pred-test_y)^2)
 ```
 
 ## 3i 
+*Comment on your results. How accurately can we predict the number of college applications received? Is there much difference among the test errors resulting from these two approaches?*  
+
 test MSE for full regular linear regression model:  
 ```{r}
 fit = lm(Apps~., data=train_college)

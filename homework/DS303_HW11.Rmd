@@ -19,7 +19,8 @@ library(tree)
 
 
 # Problem 2: Boosting
-
+## 2a 
+*Remove the observations for whom the salary information is unknown, and then log-transform the salaries.*  
 ```{r}
 ## 2a 
 Hitters = na.omit(Hitters) 
@@ -28,6 +29,8 @@ Hitters$Salary = log(Hitters$Salary)
 
 ```
 
+## 2b 
+*Create a training set consisting of the first 200 observations, and a test set consisting of the remaining observations.*  
 ```{r}
 ## 2b 
 n = dim(Hitters)[1]
@@ -38,6 +41,8 @@ test_hitters = Hitters[201:n,]
 ```
 
 ## 2c 
+*Perform a grid search on the training set using 10-fold cross-validation to decide the optimal number of trees, the optimal λ, and optimal depth. To keep things computationally simple, only considered 3 different values for each of the tuning parameters. You may decide what grid of values to use. Report your results for the optimal number of trees, the optimal λ, and optimal depth.*  
+
 number of trees: 3000  
 depth: 5  
 shrinkage: .01  
@@ -62,6 +67,8 @@ gbm_model
 
 
 ## 2d 
+*Implement boosting on the training set with the tuning parameters you have selected from the grid search. Which variables appear to be the most important predictors in the boosted model?*  
+
 The most important predictor is CAtBat, followed by CWalks and CRuns 
 ```{r}
 boost.hitters = gbm(Salary~.,data=train_hitters, distribution = "gaussian", n.trees=3000, interaction.depth = 5, shrinkage = c(0.01)) 
@@ -70,6 +77,8 @@ summary(boost.hitters)
 ```
 
 ## 2e 
+*What is the test MSE of the boosted model from part (d)?*  
+
 test MSE for boosting:  
 ```{r}
 yhat.boost = predict(boost.hitters, newdata=test_hitters, n.trees=3000)
@@ -80,6 +89,8 @@ mean((yhat.boost-test_hitters$Salary)^2)
 ```
 
 ## 2f 
+*Now apply random forest to the training set. How did you select your value for m? What is the test set MSE for this approach?*  
+
 tuning parameter m:  
 ```{r}
 flds <- createFolds(train_hitters$Salary, k = 10, list = TRUE, returnTrain = FALSE)
@@ -132,6 +143,9 @@ mean((yhat.rf - test_hitters$Salary)^2)
 
 # Problem 3: Bias of Trees
 ## 3a 
+*Run the code. Use this setup to simulate 1000 training sets. The true population regression line can be used to simulate n = 100 new Y values. There is no need to generate new X’s. For each of these 1000 training sets, train a single decision tree (overfit, no pruning). *  
+*Then store the predicted values f^(X) when all X’s equal 1 (X1 = 1,X2 = 1,...,X20 = 1). Report the first predicted values for the first 5 iterations of your loop.*  
+
 first 5 predictions for Xi=1:  
 ```{r}
 set.seed(1) # so we all get the same x values. 
@@ -164,6 +178,10 @@ head(pred_X_1, 5)
 ```
 
 ## 3b 
+*Use your results from (a) to obtain the squared bias and variance of the decision trees when all predictor values equal 1 (X1 = 1, X2 = 1, . . . , X20 = 1). Report both values here. Recall that for a fixed value x0:*  
+*Bias(f^(x0)) = [E(f^(x0)) − f(x0)]^2* 
+*Var(f^(x0)) = E[f^(x0) − E(f^(x0))]^2 *  
+
 Bias for single tree when Xi=1:  
 ```{r}
 true_y = rep(1, 20)%*%beta
@@ -181,6 +199,7 @@ mean(pred_X_1 - mean(pred_X_1))^2
 ```
 
 ## 3c 
+*Repeat (a) but now train a random forest for each training set. Set m = 10 and the number of trees to be 200. Again, store the predicted values f^(X) when all X’s equal 1. Report the first predicted values for the first 5 iterations of your loop. It may take a few minutes for all 1000 iterations to run.*  
 
 ```{r}
 pred_X_1 = rep(NA, 1000)
@@ -203,7 +222,8 @@ head(pred_X_1, 5)
 
 ```
 
-## 2d 
+## 3d 
+*Use your results from (c) to obtain the squared bias and variance of the random forests when all predictor values equal 1. Report both values here.*  
 
 Bias for random forest when Xi=1:  
 ```{r}
@@ -222,23 +242,34 @@ mean(pred_X_1 - mean(pred_X_1))^2
 ```
 
 ## 3e 
+*What is the change in the order of magnitude in (squared) bias between the two methods?*  
+
 the squared bias increased between using a single tree and using random forest 
 
 ## 3f 
+*What is the change in the order of magnitude in variance between the two methods?*  
 the variance decreased between using a single tree and using random forest 
 
 ## 3g 
+*What can we conclude about how bias and variance behave for ensemble methods compared to a single decision tree?*  
+
 So when using an ensemble method over a single decision tree, you get more bias but less variance. 
 
 
 # Problem 4: Understanding K-Means
 ## 4a 
+*Prove theorem*  
 ![](IMG_1342.jpg){width=50%} 
 
 ## 4b 
+*On the basis of this identity, argue that the K-means clustering algorithm decreases the total within-cluster variation (our objective function) at each iteration*  
+
 With each iteration, we assign each observation to the centroid that they are closest to. This will decrease the within cluster observation each time 
 
 ## 4c 
+*In this problem, you will perform K-means clustering ‘manually’, with K = 2 on a toy example with n = 6 observations and p = 2 features. The observations are as follow:*  
+
+*Plot the observations (using R) Show the plot here.*  
 i) plot for observations:  
 ```{r}
 ## i 
@@ -250,6 +281,7 @@ plot(X1, X2)
 
 ```
 
+*Randomly assign a cluster label to each observation. You can use the sample() function in R to do this. Report the cluster labels for each observation.*  
 ii) random assignment of clusters:  
 ```{r}
 ## ii 
@@ -262,6 +294,7 @@ rand_clust
 
 ```
 
+*Compute the centroid for each cluster. Report those values here.*  
 iii) centroids for cluster 1 and 2 respectively:  
 ```{r}
 clust1 = data[data$rand_clust == 1,]
@@ -276,6 +309,8 @@ centroid2
 
 ```
 
+*Assign each observation to the centroid to which it is closest, in terms of Euclidean distance. Report the cluster labels for each observation.*. 
+*Repeat (iii) and (iv) until the answers obtained stop changing. Report the centroids and cluster labels for the first two iterations.*  
 iv & v)  
 centroids and clusters for the first 2 iterations:  
 ```{r, warning=FALSE}
@@ -329,6 +364,7 @@ while (!identical(prev_clusters, new_clusters)){
 
 ```
 
+*In your plot from (i), color the observations according to the cluster labels obtained. Show that plot here.*  
 vi) 
 ```{r}
 plot(X1, X2, col = data[,3], pch = 19)
@@ -337,15 +373,20 @@ plot(X1, X2, col = data[,3], pch = 19)
 ```
 
 # Problem 5: Dendrogram 
+*Suppose that we have four observations, for which we compute a dissimilarity matrix, given by (matrix) *  
 ## 5a & b
+*Using the dissimilarity matrix, sketch the dendrogram that would result from carrying out hierarchical clustering on these four observations using complete linkage. Be sure to indicate on the dendrogram the height at which each fusion occurs.*  
+*Repeat (a), this time using single linkage hierarchical clustering.*  
 
 ![](IMG_1256.jpg){width=50%} 
 
 ## 5c 
+*Suppose that we cut the dendrogram obtained in (a) such that two clusters result. Which observations are in each cluster?*  
 cluster 1: observations 1 & 2  
 cluster 2: observations 3 & 4  
 
 ## 5d 
+*Suppose that we cut the dendrogram obtained in (b) such that two clusters result. Which observations are in each cluster?*  
 cluster 1: observations 1, 2, & 3  
 cluster 2: observation 4  
 

@@ -65,7 +65,7 @@ mean(prune.pred!=Carseats.test$High) #test misclassification
 ## these trees don't do as well because they are grown from greedy algorithms, suboptimal splits 
 ## binary splits are very sensitive to change with different data, very overfit 
 
-# take the averge of a whole bunch of different trees 
+# take the average of a whole bunch of different trees 
 
 
 

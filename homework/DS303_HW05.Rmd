@@ -17,6 +17,9 @@ library(ggplot2)
 library(kableExtra)
 ```
 
+# Problem 1: Multiple Linear Regression
+*Suppose you work for a consulting firm. Your manager gives you the Boston dataset (part of library(ISLR2)) and asks you to build a multiple linear regression model to predict median home prices (medv). In typical form, he gives you no instructions or input. The final deliverable should be a model that can accurately predict medv from a set of predictors.*  
+
 ```{r, results = 'hide'}
 # check assumption 
 
@@ -207,16 +210,20 @@ summary(best_model)$coefficients
 
 # Problem 2: Forward and backward selection 
 ## 2a 
+*Suppose we perform subset, forward stepwise, and backward stepwise selection on a single data set. For each approach, we can obtain p models containing k = 1, 2, . . . , p predictors. For a given k, best subset will give us a best model with k predictors. Call this Mk,subset. Forward stepwise selection will give us a best model with k predictors. Call this Mk,forward. Backward stepwise selection will give us a best model with k predictors. Call this Mk,backward. For a given k, which of these three models has the smallest training MSE? Explain your answer.*  
+
 Mk from subset selection would have the smallest training MSE because it looks at all the combinations of predictors for that size and picks the one with the smallest RSS. The other two selection methods don't look at all possible models because they select models based on the current model. So forward stepwise will only look at models that contain the current predictors and one more, and backwards will look at ones with the current predictors minus one.  
 
 subset will have the smallest RSS (which is a function of training MSE). forward/backwards are greedy and will not necessarily return the smallest RSS 
 
 ## 2b 
-Mk from subset selection would have the smallest test MSE. Since stepwise selection often choose a suboptimal model due to not considering all options, it will have the lowest test MSE.  
+*Same setup as part (a). For a given k, which of these three models has the smallest test MSE? Explain your answer.*  
 
 possible that any 3 will have the smallest test MSE since we have not seen the test data before 
 
 ## 2c 
+*We will use the College data set in the ISLR2 library to predict the number of applications (Apps) each university received. Randomly split the data set so that 90% of the data belong to the training set and the remaining 10% belong to the test set. Implement forward and backward selection on the training set only. Do they lead you to the same model? For each approach, report the best model based on AIC. From these 2 models, pick a final model based on their performance on the test set. Report both model’s test MSE and summarize your final model.*  
+
 Yes, both forward and backwards selection led me to model 11. Both of these models have the same predictors and the same coefficients.  
 yhat = -179.38167 - 502.38015(PrivateYes) + 1.59780(Accept) - 0.64543(Enroll) + 47.25085(Top10perc)  - 12.87683(Top25perc) + 0.05612(P.Undergrad) - 0.09562(Outstate) + 0.13127(Room.Board) - 10.26581(PhD) + 0.08195(Expend) + 8.80283(Grad.Rate)  
 Since both models are exactly the same, their test MSE is the same: 897103.5  
@@ -309,6 +316,8 @@ coef(regfit.bwd,id=11)
 
 
 # Problem 3: A Puzzling Problem 
+*When fitting a linear regression model on a data set, you encounter the following R output. You notice there is something strange about the results. Point out what is strange in this output and explain clearly how this could happen.*  
+
 The strange thing is that the intercept has a very statistically significant p value while the predictors are not significant. The coefficient values also have very high standard error values and very high p-values. This can happen if the predictors are highly correlated. With highly correlated predictors, you can still get estimates, but it is problematic. This leads to very small eigenvalues, which leads to very large standard errors and vey small test statistic values. Highly correlated predictors means that the hypothesis test has reduced power. 
 
 
@@ -316,6 +325,8 @@ The strange thing is that the intercept has a very statistically significant p v
 # Problem 4: Interaction Terms 
 
 ## 4a 
+*This data set contains a few categorical predictors. As we already discussed in lecture, these predictors should be stored as factors so that R can handle them properly. Using the str function, check that all the qualitative predictors in our dataset are stored correctly in R as factors. Copy and paste your output.*  
+
 All categorical variables stored as factors.  
 ```{r}
 str(Credit)
@@ -323,6 +334,8 @@ str(Credit)
 ```
 
 ## 4b 
+*Fit a model with the response (Y ) as credit card balance and X1= Income and X2 = Student as the predictors. Call this model fit. Summarize your output.*  
+
 yhat = 211.14 + 5.98(Income) + 382.67(StudentYes) 
 ```{r, results = 'hide'}
 fit = lm(Balance~Income + Student, data=Credit)
@@ -331,15 +344,21 @@ summary(fit)
 ``` 
 
 ## 4c 
+*Based on our results from part (b), write out the fitted model for students and write out the fitted model for non-students.*  
+
 Student: yhat = 593.81 + 5.98(Income)  
 Non Student: yhat = 211.14 + 5.98(Income)  
 
 
 ## 4d 
+*Interpret the regression coefficient related to Income for both models.*  
+
 For every 1,000 dollar increase in Income, balance increases by 5.98 dollars. This is the same for both because this model assumes that income affects balance at the same rate for both students and non students.  
 
 
 ## 4e 
+*Notice that our model says that regardless of student status, the effect of Income on average Balance is the same. Do you think this is a reasonable constraint on our model? Construct some plots to back up your answer.*  
+
 This is not a reasonable constraint. While an increased income would generally increase balance, it wouldn't affect students and non students the same because they would have different expenses. Students would be paying off tuition which would affect their balance differently than non students who are paying for rent, utilities, and food. The plot below shows income vs balance groups by student and non student with the best fit line for each. The best fit lines clearly have different slopes, indicating that income affects balance different for students vs non students.  
 
 ```{r}
@@ -350,6 +369,10 @@ ggplot(Credit, aes(x=Income, y=Balance, colour = Student)) + geom_point() + geom
 ``` 
 
 ## 4f 
+*One way we could relax this assumption is by incorporating interaction terms into our model. Specifically: Yi = β0 +β1Xi1 +β2Xi2 +β3Xi3 +εi,*  
+*where X1= Income, X2 = Student, and X3 = Income × Student. Fit a model with an interaction term using the following code:*  
+*Based on this model, write out the fitted model for students and write out the fitted model for non-students.*  
+
 Students: yhat = 677.30 + 4.22(Income)  
 Non Students: yhat = 200.62 + 6.22(Income)  
 ```{r, results = 'hide'}
@@ -359,6 +382,8 @@ summary(new_fit)
 ``` 
 
 ## 4g 
+*Interpret the regression coefficient related to Income for the fitted models obtained in part (f ).*  
+
 For students, for every 1,000 dollar increase in income, balance increases by 4.22 dollars.  
 For non students, for every 1,000 dollar increase in income, balance increases by 6.22 dollars.  
 

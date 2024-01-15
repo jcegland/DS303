@@ -10,8 +10,11 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 # Problem 1: Properties of least square estimators via simulations 
-
+*Simulations are a very powerful tool data scientists use to deepen our understanding of model behaviors and theory.
+Suppose we know that the true underlying population regression model is :
+Yi =2+3×Xi1 +5×log(Xi2)+εi (i=1,...,n), εi ∼N(0,12).*  
 ## 1a  
+*What are the true values for β0, β1, and β2?*  
 beta0 = 2  
 beta1 = 3  
 beta2 = 5  
@@ -19,7 +22,8 @@ beta2 = 5
 
 
 ## 1b  
-
+*Generate 100 Yi observations from the true population regression model. You can use the
+following code to generate X1 and X2:*  
 ```{r} 
 beta_0 = 2  
 beta_1 = 3  
@@ -38,6 +42,7 @@ print(Y)
 
 
 ## 1c  
+*Draw a scatterplot of X1 and Y and a scatterplot of X2 and Y . Describe what you observe.*  
 The X1 values are more closely correlated to Y than the X2 values are. The X1 values are closer together, while the X2 values are more spread apart.  
 
 ```{r} 
@@ -48,7 +53,7 @@ plot(X2, Y)
 
 
 ## 1d 
-
+*Design a simple simulation to show that βˆ1 is an unbiased estimator of β1 .*  
 ```{r, echo=TRUE} 
 B=5000 
 beta_0 = 2  
@@ -73,7 +78,7 @@ mean(beta1hat)
 
 
 ## 1e  
-
+*Plot a histogram of the sampling distribution of the βˆ1 ’s you generated. Add a vertical line to the plot showing β1 = 3.*  
 ```{r} 
 hist(beta1hat)
 abline(v=3, col='red')
@@ -81,7 +86,7 @@ abline(v=3, col='red')
 ``` 
 
 ## 1f  
-
+*Design a simple simulation to show that βˆ2 is an unbiased estimator of β2 .*  
 ```{r, echo=TRUE} 
 B=5000 
 beta_0 = 2  
@@ -105,7 +110,7 @@ mean(beta2hat)
 
 
 ## 1g  
-
+*Plot a histogram of the sampling distribution of the βˆ2 ’s you generated. Add a vertical line to the plot showing β2 = 5.*  
 ```{r} 
 hist(beta2hat)
 abline(v=5, col='red')
@@ -114,9 +119,13 @@ abline(v=5, col='red')
 
 
 ## 1h  
+*Propose an unbiased estimator for Var(εi). Prove (using statistics and math) that your
+proposed estimator is unbiased. No code/simulations should be used here.*  
 ![](unbiased_error.jpg){width=50%}
 
 ## 1i  
+*Use your answer from (h) to directly compute an unbiased estimator for Var(εi) for our simulated data. Report that numeric value here.*  
+**wrong: error between Y and Y^, not X1**  
 σ^2 = 1/(n-1) * E[Σi=1,n((xi-x_bar)^2)] 
 σ^2 = 8.587559 
 
@@ -125,46 +134,64 @@ X1 = seq(0,10,length.out =100)
 
 sigma_square = sum((X1-mean(X1))^2)/99
 
+## correct answer ## 
+sum((Y-fit$fitted.values)^2)/(n-3) 
+## should be 1.012136 
+
 ``` 
 
 
 # Problem 2: Review of regression concepts  
-
-## 2a  
-False, the true regression model is Yi = B0 + B1Xi1 + B2Xi2 + ... + BmXim + ei (i = 1,...,n)  
-
-
-## 2b  
-False, in general, we would expect the training MSE to be smaller because that is what we are optimizing the model to fit. And we expect the test MSE will be bigger because it is trying to predict new values that the model did not train off of. However, it is not guaranteed. 
+*Evaluate whether the following statements are True or False and justify your answer.*  
+## 2a  true population regression model 
+*When asked to state the true population regression model, a fellow student writes it as follows: E(Yi)=β0 +β1xi +εi (i=1,...,n).*  
+False, E(Yi) is a parameter and therefore is a constant with no randomness. The true population regression model is Yi = B0 + B1xi + ei, (i=1, ..., n)  
 
 
-## 2c  
+## 2b training vs test MSE 
+*For a given dataset, the training MSE will always be smaller than the test MSE.*  
+False, it is entirely possible that the training MSE could be larger than the test MSE depending on how you create your training and test set. In general, we expect that the training MSE will be smaller than the test MSE, but this is not a guarantee.  
+
+## 2c  expected test MSE 
+*The expected test MSE is defined as: E(y0 − f^(x0))^2 . Here y0 is from our training set and f^() is the model we built from our training set. We evaluate f^(x0) on the x0 values from our test set.*. 
 False, E(y0 - f-hat(x0))^2 is the expected test MSE, but y0 is the actual y values from our test set, not the training set. f-hat(x0) is evaluated by predicting values using the x0 from the test set.  
 
 
-## 2d  
+## 2d  bias variance decomposition 
+*The bias-variance decomposition tells us that sometimes reducing the complexity of our model (for example, removing a predictor), can actually improve our expected test MSE.*  
 True, by reducing the complexity, we are less likely to overfit the model, which will then improve our test MSE. The bias-variance decomposition tells us to find a balance between enough flexibility and not too much to find the lowest test MSE.  
 
 
-## 2e 
+## 2e irreducible error 
+*The expected test MSE can be smaller than the irreducible error.*  
 False, the irreducible error is the minimum bound for the test MSE. Since we can only train the model based on the training data, we won't be able to fit the model more accurately than the variance of the residuals.  
 
 
-## 2f  
+## 2f  irreducible error
+*The training MSE can be smaller than the irreducible error.*  
 True, the training MSE can be smaller than the irreducible error. By making more and more flexible models, we can overfit the data so that the model matches the training data perfectly, essentially driving the training MSE to 0.  
 
 
-## 2g  
+## 2g  full rank 
+*Consider the patient dataset we went over in lecture. Suppose your colleague adds a new predictor to the dataset called ‘unhappiness’. For each patient, this is the average of their disease severity score and anxiety score. Higher scores indicate more unhappiness. Your colleague now proposes fitting a linear regression model that looks like*  
+*lm(satisf ~ age + severe + anxiety + unhappy, data = patient).*  
+*Is this problematic? Explain why. Your explanation should include a clear definition on what it means for a matrix to be full rank.*  
 This would be a problem. Since the happiness score is calculated using 2 of the other predictors, it contains redundant data. This will not improve the fit of the dataset. To create a model, we want data that is full rank. This means that the data is linearly independent and does not contain any redundant data.  
 
 
-## 2h 
+## 2h RSS 
+*How does the RSS (defined as summation(n, i=1){(Yi − Yˆi)2)} behave each time we add a predictor to the model? Does it increase, decrease, stay the same, or not enough information? Explain in plain language the rationale behind its behavior.*  
 There is not enough information. If adding a predictor improves the model and lowers the training MSE, the RSS will decrease, but if the training MSE increases, the RSS will increase. The RSS is the sum of the squared distance between the actual training data point and the model. So if the error is smaller, the distance of the residuals will be smaller.  
+The RSS is proportional to the training MSE. Therefore, adding a predictor and increasing the complexity of the model will cause the RSS to decrease.  
 
 
 # Problem 3: Expected test MSE  
+*For a real dataset, we cannot obtain the expected test MSE. It requires knowledge of the true model, irreducible error, and access to an infinite number of training sets. In simulations, we can get close to obtaining the expected test MSE and this is exactly what we’ll do. Suppose we know that the true population regression line is:
+Y =β0 +β1X1 +β2X12 +ε.* 
 
 # 3a  
+*Suppose β0 = β1 = β2 = 1, and ε ∼ N (0, 1). Generate n = 100 observations for Yi under this model. You can use the following code to generate X1:*  
+*Produce a plot of Y and X1 and print that here.*  
 100 values of Y  
 ```{r} 
 set.seed(1)
@@ -181,7 +208,7 @@ plot(X1, Y)
 
 
 # 3b  
-
+*Ideally, to compute the expected test MES we would have an infinite number of training sets. That’s not computationally feasible, so instead let’s just simulate 1000 training sets (each with n = 100). That means you’ll need to simulate (n = 100) Y values 1000 times. There is no need to generate new X1’s (think about why). For each of these 1000 training sets, train 5 models of increasing complexity (M1 − M5). M1 will be the linear regression model, M2 includes a 2nd order-term, M3 includes a 3rd order term, and so on until M5. For each model, store the predicted value of Y when X1 = 1. Report the first 5 predicted values for each model here.*  
 ```{r} 
 B=1000 
 beta_0 = beta_1 = beta_2 = 1 
@@ -195,11 +222,11 @@ results = data.frame(model, value_at1)
 for (i in 1:B){
   error = rnorm(100,0,1)
   Y = beta_0 + beta_1*X1 + beta_2*X1^2 + error 
-  M1 = lm(Y~poly(X1+X2^2, 1, raw=TRUE))
-  M2 = lm(Y~poly(X1+X2^2, 2, raw=TRUE))
-  M3 = lm(Y~poly(X1+X2^2, 3, raw=TRUE))
-  M4 = lm(Y~poly(X1+X2^2, 4, raw=TRUE))
-  M5 = lm(Y~poly(X1+X2^2, 5, raw=TRUE))
+  M1 = lm(Y~X1)
+  M2 = lm(Y~poly(X1, 2, raw=TRUE))
+  M3 = lm(Y~poly(X1, 3, raw=TRUE))
+  M4 = lm(Y~poly(X1, 4, raw=TRUE))
+  M5 = lm(Y~poly(X1, 5, raw=TRUE))
   
   M1_predict[i] = predict(M1)[1]
   M2_predict[i] = predict(M2)[1]
@@ -224,6 +251,7 @@ kable(results, format = "html") %>% kable_styling()
 
 
 # 3c  
+*Create a test set of 1000 observations: (x0, y0). For each test observation, let x0 = 1. Generate y0 using the true regression line with x0 = 1. Report the first 5 values in your test set.*  
 First 5 values of test set when x0=1  
 
 ```{r} 
@@ -245,6 +273,7 @@ kable(head(test_set), format = "html") %>% kable_styling()
 
 
 # 3d  
+*Use the results from above to obtain the expected test MSE for each of the five models when x0 = 1. Report the five expected test MSEs here. Which model has the smallest expected test MSE?*  
 Model 4 has the smallest expected test MSE.  
 
 ```{r} 
@@ -265,7 +294,7 @@ print(paste("M5 test MSE: ", m5ts ))
 
 
 # 3e  
-
+*Produce a plot with expected test MSE on the y-axis and model complexity (1-5) on the x-axis. Present that plot here.*  
 ```{r} 
 mse = c(m1ts, m2ts, m3ts, m4ts, m5ts)
 complexity = c(1,2,3,4,5)
@@ -275,7 +304,8 @@ plot(complexity, mse)
 ``` 
 
 
-# 3f. 
+# 3f 
+*Explain the behavior of your results in the context of the bias-variance tradeoff.*  
 The simplest model had the highest MSE by far, but when the model got more complex, the MSE decreased. This is because the bias decreased with the increasing flexibility. However some of the higher complexity models had higher MSE. This is due to the increasing variance. The bias decreases but the variance increases, so we have to find a model with a good balance of both to find the lowest MSE. 
 
 

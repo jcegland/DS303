@@ -21,12 +21,20 @@ library(glmnet)
 
 # Problem 1: Concept Review 
 ## 1a 
+*Explain in plain language (using limited statistics terminology) why lasso can set some of the regression coefficients to be 0 exactly, while ridge regression cannot. You may include a figure if that is helpful.*  
+
 The shape of the l1 penalty used in lasso regression creates a diamond since the penalty is the equation for a diamond, while the l2 penalty used in ridge regression is the equation for a circle. The least squares solution can touch the corner of the diamond but can only get close to the circle. Touching the corner of the diamond shrinks the predictor variable to 0.  
 
 ## 1b 
+*Suppose we estimate the regression coefficients in a linear regression model by minimizing (expression) for a particular value of λ. For parts (a) through (e), indicate which of i. through v. is correct. Justify your answer.*  
+*i. Increase initially, and then eventually start decreasing in an inverted U shape.*  
+*ii. Decrease initially, and then eventually start increasing in a U shape. *  
+*iii. Steadily increase.*  
+*iv. Steadily decrease.*  
+*v. Remain constant.*  
+
 a) as lambda increases, training MSE will:  
-   ii. decrease initially, then eventually start increasing in a U shape, a larger lambda will increase the model's prediction, but adding too much bias will result in moving the model towards underfitting which will increase training MSE. 
-   (answer) RSS will steadily increase as lambda increases from 0 
+   iv. RSS will steadily increase as lambda increases from 0 
 
 b) as lambda increases, test MSE will:  
    ii. decrease initially, then eventually start increasing in a U shape, larger lambda means adding more bias into the model which will decrease the test MSE by decreasing variance, but adding too much bias will result in a higher test MSE (increases when bias no longer offsets the var)  
@@ -42,6 +50,8 @@ e) as lambda increases, irreducible error will:
 
 
 # Problem 2: Regularized Regression Models
+## 2a 
+*We will start with a little data cleaning. We’ll also split the data into a training and test set. So that we all get the same results, please use the following code:*  
 
 ```{r}
 Hitters = na.omit(Hitters)
@@ -56,6 +66,8 @@ Y.test = Y[test]
 ```
 
 ## 2b 
+*Fit a ridge regression model. Replicate the example we had in class to obtain the the optimal λ that minimizes the 10-fold CV. Present a plot of the cross-validation error as a function of λ. Report that value here and call it λridge. min*  
+
 minimum lambda for ridge regression:  
 ```{r}
 grid = 10^seq(10,-2,length=100)
@@ -73,6 +85,8 @@ plot(cv.out)
 ```
 
 ## 2c 
+*Naturally, if we had taken a different training/test set or a different set of folds to carry out cross-validation, our optimal λ and therefore test error would change. An alternative is to select λ using the one-standard error rule. The idea is, instead of picking the λ that produces the smallest CV error, we pick the model whose CV error is within one standard error of the lowest point on the curve you produced in part (b). The intention is to produce a more parimonious model. The glmnet function does all of this hard work for you and we can extract the λ based on this rule using the following code: cv.out$lambda.1se (assuming your cv.glmnet object is named cv.out). Report your that λ here and call it λridge.*  
+
 lambda value where cv error is within 1 se:  
 ```{r}
 lambda_1se_ridge = cv.out$lambda.1se 
@@ -82,6 +96,7 @@ lambda_1se_ridge
 
 
 ## 2d 
+*Fit a lasso regression model. Replicate the example we had in class to obtain the the optimal λ that minimizes the 10-fold CV. Present a plot of the cross-validation error as a function of λ. Report that value here and call it λlasso.*  
 ```{r}
 lasso.train = glmnet(x[train,],Y[train],alpha=0,lambda=grid)
 
@@ -98,6 +113,8 @@ plot(cv.out)
 ```
 
 ## 2e 
+*For lasso, report the optimal λ using the smallest standard error rule and called it λlasso.*  
+
 lambda value where cv error is within 1 se:  
 ```{r}
 lambda_1se_lasso = cv.out$lambda.1se 
@@ -106,6 +123,8 @@ lambda_1se_lasso
 ```
 
 ## 2f  
+*Evaluate the ridge regression models on your test set using λ = λridge and λ = λridge. Evaluate min 1se the lasso models on your test set using λlasso and λlasso. Report the test MSEs from these 4 min 1se models.*  
+
 ridge min cv, ridge 1se, lasso min cv, lasso 1se test MSEs respectively: 
 ```{r}
 ridge.pred = predict(ridge.train,s=lambda_min_ridge,newx=x[test,])
@@ -121,6 +140,8 @@ mean((lasso.1se.pred-Y.test)^2)
 ```
 
 ## 2g 
+*Report the coefficient estimates from ridge using λridge and λridge and likewise for the lasso models. How do the ridge regression estimates compare to those from the lasso? How do the coefficient estimates from using λmin compare to those from the one-standard error rule? Discuss what you observe.*  
+
 The regression coefficients for lambda_min_ridge are generally larger than for lambda_1se_ridge.  
 The regression coefficients for lambda_min_lasso are generally larger than for lambda_1se_lasso. Lambda_min_lasso kept more predictors than lambda_1se_lasso did.  
 The regression coefficients for lasso that weren't shrunk to 0 were larger than their corresponding ridge coefficients.  
@@ -149,6 +170,8 @@ kable(final_coef, format = "html", caption='') %>% kable_styling()
 ```
 
 ## 2h 
+*Train and implement elastic net. Report the optimal values for α and λ that produce the smallest 10-fold cross-validation error. Call these values αenet and λenet.*  
+
 alpha_enet and lambda_enet are: 
 ```{r}
 set.seed(1)
@@ -175,6 +198,8 @@ lambda_enet
 
 
 ## 2i 
+*Evaluate the elastic net on your test set using the optimal values for αenet and λenet.*  
+
 test MSE for model with alpha_enet and lambda_enet:  
 ```{r}
 enet.train = glmnet(x[train,], Y[train], alpha = alpha_enet, lambda=grid)
@@ -194,15 +219,21 @@ mean((enet.pred-Y.test)^2)
 
 
 ## 2j 
+*Which model performs the best in terms of prediction? Explain any intuition as to why.*  
+
 The elastic net model had the lowest test MSE. This makes sense because it has 2 tuning parameters to make more accurate predictors. 
 
 
 ## 2k 
+*If you were to make a recommendation to an upcoming baseball player who wants to make it big in the major leagues, what handful of features would you tell this player to focus on?*  
+
 I would say to focus on the predictors that lasso (with the min lambda) did not shrink to 0. If lasso shrunk predictor coefficients to 0, they were not statistically significant so focus on the predictors in lasso. So hits, walks, CHmRun, CRuns, CRBI, LeagueN, DivisionW, PutOuts, and Errors.  
 
 
 # Problem 3: Bootstrap
 ## 3a 
+*Based on this data set, provide an estimate for the population mean of medv. Call this estimate μˆ.*  
+
 population mean of medv:  
 ```{r}
 muhat = mean(Boston$medv) 
@@ -211,6 +242,8 @@ muhat
 ```
 
 ## 3b 
+*Provide an estimate of the standard error of μˆ using an analytical formula. Interpret this result.*  
+
 std error for the mean of medv:  
 ```{r}
 n = dim(Boston)[1]
@@ -220,6 +253,8 @@ sd(Boston$medv)/sqrt(n)
 ```
 
 ## 3c 
+*Now the estimate the standard error μˆ using the bootstrap. How does this compare to your answer from (b)?*  
+
 std error for mean of medv using bootstrap:  
 ```{r}
 n = dim(Boston)[1]
@@ -241,6 +276,8 @@ This value are very similar but the bootstrap value is slightly smaller than the
 
 
 ## 3d 
+*Using bootstrap, provide a 95% confidence interval for the mean of medv. Compare it to results using analytical formulas.*  
+
 confidence interval for mean(medv): 
 ```{r}
 ##bootstrap confidence intervals
@@ -289,6 +326,7 @@ These intervals are very similar, with the bootstrap formula resulting in a slig
 
 
 ## 3e 
+*Based on this data set, provide an estimate μˆmed for the median value of medv.*  
 median value for medv: 
 ```{r}
 median(Boston$medv)
@@ -296,6 +334,8 @@ median(Boston$medv)
 ```
 
 ## 3f
+*We would like to estimate the standard error of μˆmed. Since there is no simple formula for computing the standard error of the median, use bootstrap. Comment on your findings.*  
+
 se for median of medv: 
 ```{r}
 n = dim(Boston)[1]
@@ -317,12 +357,16 @@ This is a fairly small standard error compared to the median.
 
 
 ## 3g 
+*Based on this data set, provide an estimate μˆ0.1, the 10th percentile of medv.*  
+
 10th percentile of medv 
 ```{r}
 quantile(Boston$medv, .1)
 ```
 
 ## 3h  
+*Use bootstrap to estimate the standard error of μˆ0.1. Comment on your findings.*  
+
 se for 10th percentile of medv 
 ```{r}
 n = dim(Boston)[1]
@@ -346,25 +390,39 @@ This is also a relatively small standard error.
 
 # Problem 4: Properties of Bootstrap
 ## 4a 
+*What is the probability that the first bootstrap observation is the jth observation from the original sample? Justify your answer.*  
+
 The probability that the first bootstrap observation is the jth observation from the original sample is 1/n, where n is the number of observation in the original sample. Since we are selecting our bootstrap sample with replacement, each selection is independent and we have an equally likely chance of picking any observation from our original sample.  
 
 ## 4b 
+*What is the probability that the first bootstrap observation is not the jth observation from the original sample? Justify your answer.*  
+
 The probability that the first bootstrap observation is not the jth observation from the original sample is (n-1)/n or 1-(1/n), where n is the number of observation in the original sample. Since we are selecting our bootstrap sample with replacement, each selection is independent and we have an equally likely chance of picking any observation from our original sample.  
 
 ## 4c 
+*What is the probability that the jth observation from the original sample is not in the bootstrap sample?*  
+
 The probability that the jth observation from the original sample is not in the bootstrap sample would be ((n-1)/n)^n. Since the selections are independent of each other (because we have replacement) we can multiply the probability that j is not in each observation of the bootstrap.  
 
 ## 4d 
+*When n = 5, what is the probability that the jth observation is in the bootstrap sample?*  
+
 The probability that the jth observation from the original sample is in the bootstrap sample is 1-((n-1)/n)^n since it is complementary to the probability that it is not in the sample so,  
 When n=5, the probability that the jth observation is in the bootstrap sample is 1-((5-1)/5)^5 = .67232  
 
 ## 4e 
+*When n = 100, what is the probability that the jth observation is in the bootstrap sample?*  
+
 When n = 100, what is the probability that the jth observation is in the bootstrap sample is 1-((100-1)/100)^100 = .63397    
 
 ## 4f 
+*When n = 10, 000, what is the probability that the jth observation is in the bootstrap sample?*  
+
 When n = 10,000, what is the probability that the jth observation is in the bootstrap sample is 1-((10000-1)/10000)^10000 = .63214    
 
 ## 4g 
+*Create a plot (in R) that displays, for each integer value of n from 1 to 100,000, the probability that the jth observation is in the bootstrap sample. Comment on what you observe.*  
+
 ```{r}
 prob = rep(NA, 100000)
 for (i in 1:100000){
@@ -378,6 +436,8 @@ plot(prob, type='l')
 
 
 ## 4h 
+*Let’s investigate this numerically. What is the probability that the jth observation is in a bootstrap sample of size n = 100? Suppose j = 5. Repeatedly create bootstrap samples, and each time we record whether or not the fifth observation is contained in the bootstrap sample. The following code may help get you started: Comment on your findings.*  
+
 The number of times 5 appeared in the bootstrap was 6399. If you divide that by the number of times the bootstrap sample was ran, the value is .6452 which is the probability of getting the value of 5 in the bootstrap. The more times this trial is run, the closer this value will get to the true probability.  
 ```{r, results='hide'}
 n=10000

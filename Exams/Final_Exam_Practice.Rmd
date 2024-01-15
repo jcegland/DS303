@@ -1,0 +1,225 @@
+---
+title: "Final Exam Practice"
+author: "Jillian Egland"
+date: "2023-12-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r, message=FALSE}
+## imports 
+library(ISLR2)
+```
+
+# Concept Review 
+## 1
+*True or False? Justify your answer. When carrying out a hypothesis test, as n increases, the type 1 error will also decrease.*  
+
+false, type 1 error is influenced by alpha, which is a fixed value, so it is not influenced by n. 
+
+
+## 2 
+*True or False? Justify your answer. When carrying out a hypothesis test, as n increases, the ability to reject the H0 (power) will also increase.*  
+
+true, test statistic = bhat/se(bhat) and standard error is affected by n. So you have more power when you have a larger n 
+
+## 3 
+*Suppose your colleague fits a logistic regression model with all predictors and finds that roughly 30% of the predictors have non-significant p-values. He wants to drop those predictors and only keep all the remaining significant predictors. He asks for your advice. What do you tell him?*  
+
+Don't take all of them out at once. There could be predictors that are dependent on each other. Due to multicollinearity, we may get bad inferences. We don't use p-values due to the multiple testing problem. By chance, we will see at least some significant p-values. We use assumptions to get these p-values (need normally distributed data) 
+
+## 4 
+*True or False? Justify your answer. Since ridge regression (with λ > 0) introduces a penalty term to protect us from overfitting, its training MSE will always be smaller than that of least square regression.*  
+
+Ridge regression introduces the penalty to the test MSE in order to add bias to the model. So least squares will be more flexible than ridge and will therefore have a smaller training MSE. 
+
+## 5 
+*True or False? Justify your answer. As K increases, the KNN classifier because more flexible.*  
+
+False, as k increases, the model becomes less flexible. If k=1, we use the 1 closest data point. As we look at more values of k, we incorporate more information and thus more bias and less variance. 
+
+## 6 
+*True or False? Justify your answer. For a given data set, suppose we want to prune a decision tree. We can directly calculate the bias and variance of a tree for different sizes. Based on this, we can choose an optimal tree size.*  
+
+false, we cannot directly calculate bias and variance for the true model. Estimate collectively as test MSE.  
+
+## 7 
+*Yˆ is an estimator for _____ . Is it an unbiased estimator? Explain.*  
+
+Y^ is an unbiased estimator for E(Y), Y = f(x) + error. E(Bhat) = B, X is fixed value,  
+Y^ = XB^ = XB = E(Y)  
+Y^ is not estimator for Y because it is not a fixed value and has variability. But E(Y) is a fixed value so we can try to hit the target.  
+
+## 8 
+*Explain what (if anything) happens to a multiple linear regression model (Yˆ = βˆ + βˆ X +
+. . . βˆ X ) under the following scenarios:*  
+*(a) We have a dataset where we have redundant information among the predictors.*  
+cannot take the inverse, so no unique solution, least squares breaks down 
+
+*(b) The response Y does not follow a normal distribution.*  
+cannot make inferences, but you can still fit a least squares model 
+
+*(c) The assumption E(εi) = 0 does not hold.*  
+no longer have unbiased estimates, everythin is biased 
+
+## 9 
+*is it affected by the curse of high dimensionality?*  
+a) Boosting-no, boosting gives more importance to features that contribute to the model's performance, which helps in high dimensional settings. Robust because it learns from itself (slow learner).   
+
+b) KNN classification-yes, with high dimensional data, distance is no longer as meaningful.  
+
+c) LDA-yes, LDA assumes that the covariance matrices in each class are the same, but estimating this matrix is difficult in high dim settings. LDA requires taking a matrix inverse which cannot be done with high dimensional data.  
+
+d) K-means clustering-yes, distance is no longer as meaningful with high dimensional data.  
+
+e) Ridge regression-no, ridge adds a penalty that can address the multicollinearity that often occurs in high dimensional settings. B^ = (XTX + LI)^-1 XTY, lambda greater than 0 so can always take the inverse  
+can handle multicollinearity, might have some instability in solutions.  
+can work well in high dimensional settings  
+
+f) Naive Bayes- not affected, 
+
+g) QDA-yes affected, not invertible  
+
+## 10 
+*Your colleague (who is inexperienced at machine learning) states that all your models are data-dependent. That means if you had used a different training set, your trained model would look different: your predictions for Y would change. This worries your colleague - how do they know which model is the ‘right’ one? What tools do you have at your disposal to address their concerns? Explain.*  
+
+There is no "right" model. Can use test MSE. Can use confidence intervals to give a quantitative value on predictions assurance. Can quantify uncertainty.   
+
+## 11 
+*In a well known competition for the Netflix, many teams decided to merge together before the competition finished for the one million dollar prize. Explain briefly what strategy the teams likely used to combine their algorithms, and why one can expect that this strategy will improve the final prediction results.*  
+
+Used some sort of ensemble methods to merge results. This consists of averaging their algorithms/results. This will reduce variance by an order of n (plus some other term because the datasets are not independent). Variance is a component of test MSE so decreasing variance decreases test MSE.  
+Bagging decorrelates trees with the random subset of splits at each level, which will decrease the extra term in the variance. 
+
+
+# Coding 
+## 1 
+*Design a simulation study to calculate the variance of random forest as a function of m. Create a plot that shows that as m decreases, the variance of the bagged model decreases as well. Use simple statistical reasoning to explain why we see a reduction in variance as m decreases. You can use the same setup as HW 11, Problem 3.*   
+as m increases, variance increases.  
+1000 training sets, evaluate at x=1, average across all training sets, plot 
+
+```{r}
+library(randomForest)
+library(ISLR2)
+
+set.seed(1) # so we all get the same x values. 
+n = 100
+p = 20
+Xmat = matrix(NA,nrow=n,ncol=p)
+for(i in 1:p){
+  Xmat[,i] = rnorm(n)
+}
+beta = rep(seq(1,3,length.out=5),4)
+Y = Xmat%*%beta + rnorm(n,0,1)
+
+train_set = data.frame(Xmat,Y)
+
+### generate 1000 training sets and predicted values when all predictors = 1
+x0 = rep(1,20)
+x0 = as.data.frame(t(x0))
+colnames(x0) = colnames(train_set)[1:p]
+
+### random forest 
+
+M = c(3,5,7,9,11,13,15,20)
+var = rep(NA,length(M))
+for(j in 1:length(M)){
+  m = M[j]
+  yhat1 = rep(NA,500)
+  for(i in 1:500){
+    Y = Xmat%*%beta + rnorm(n,0,1)
+    data_sim = data.frame(Xmat,Y)
+    bag.train = randomForest(Y~.,data=data_sim, mtry = m, importance = TRUE, ntree=200)
+    yhat1[i] = predict(bag.train, newdata=x0)
+    if(i%%100==0){print(i)}
+  }
+  Efhat1 = mean(yhat1)
+  var[j] = mean((yhat1 - Efhat1)^2)
+  print(var[j])
+}
+
+
+```
+
+
+## 2a
+*Should we scale our features, which are gene expressions, in this setting? Justify your answer. If you decide to scale the features, do so.*   
+Yes, we should scale. Gene expressions may have different scales, so scaling will make sure that all features contribute evenly.  
+
+## 2b 
+*Implement K-means clustering on the (possibly scaled) data. Experiment with K = 2 and K = 4. Report the total within-cluster sum of squares for both K = 2 and K = 4.*  
+
+```{r}
+## check variance for some of the predictors 
+
+nci.labs <- NCI60$labs
+nci.data <- NCI60$data
+scaled_nci_data = scale(nci.data)
+
+km2.out <- kmeans(scaled_nci_data,2,nstart=20)
+km4.out <- kmeans(scaled_nci_data,4,nstart=20)
+#km2.out$cluster
+#km4.out$cluster
+
+
+total_k2 = km2.out$tot.withinss
+total_k4 = km4.out$tot.withinss
+
+
+cat("Total within-cluster sum of squares for K = 2:", total_k2, "\n")
+cat("Total within-cluster sum of squares for K = 4:", total_k4, "\n")
+
+
+```
+
+## 2c 
+*Implement hierarchical clustering with complete linkage and Euclidean distance on the (possibly scaled) data. Cut the dendrogram to obtain 2 clusters. How does this compare to the K-means results we obtained in part (b) for K = 2? Report a confusion matrix to compare the results.  
+The resulting clusters are very similar.*  
+```{r}
+distM = dist(scaled_nci_data)
+hc.complete <- hclust(distM, method="complete")
+#plot(hc.complete, main = "Complete Linkage", xlab = "", sub ="", cex = 0.9)
+h.clusters = cutree(hc.complete,2)
+
+table(km2.out$cluster, h.clusters)
+
+```
+
+## 2d 
+*Discuss how you might validate your clustering results.*  
+Since we have the true cluster labels, we can convert this to a supervised learning problem to test. You can split the data into a training and test set and perform k-fold validation on the training set. If the chosen method can consistently return the correct clusters, then that method would work well on new data.  
+
+
+## 3 
+*Implement PCA on the USArrests dataset. The proportion of variance explained by the first two principal components is 87%. Bootstrap the standard error for this quantity.*  
+
+```{r}
+n = dim(USArrests)[1]
+B = 2000
+var = rep(0,2000)
+for(b in 1:B){
+  index = sample(1:n,n,replace=TRUE)
+  bootsample = USArrests[index,]
+  pr.out2 = prcomp(bootsample,scale=TRUE)
+  var[b] = sum((pr.out2$sdev[1:2])^2/sum(pr.out2$sdev^2))
+}
+sqrt(sum((var-mean(var))^2)/(B-1)) #Standard Error Formula
+#0.02209227 Standard Error
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
